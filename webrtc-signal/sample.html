@@ -16,6 +16,11 @@
   <div class="incommingMessages">
     
   </div>
+
+  <div class="fileAttach"><input type="file" id="fileInput"></div>
+  <div class="fileButton"><button id="sendFile">Send File</button></div>
+  <div class="incommingFile"> </div>
+
   
  
   <script src="/socket.io/socket.io.js"></script>
@@ -23,7 +28,7 @@
   <script type="module">
 
 
- const socket = io("https://localhost:9000");
+ const socket = io("https://10.126.6.237:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
@@ -41,17 +46,23 @@ const peerConnection = new RTCPeerConnection(configuration);
 let dataChannel;
 
 peerConnection.addEventListener('datachannel', (event) =>{
-    const datachannel = event.channel;
-    setupDataChannel(datachannel);
+     dataChannel = event.channel;
+    setupDataChannel(dataChannel);
 });
 
 
 
-const messageBox = document.querySelector('.messageBox input')
+const messageBox = document.querySelector('.messageBox input');
 const sendButton = document.querySelector('.sendbutton button');
-const incommingMessage = document.querySelector('#incomingMessages');
+const incommingMessage = document.querySelector('.incommingMessages');
+const fileButton = document.querySelector('#sendFile');
+const attachFile = document.querySelector('#fileInput');
+const incommingFile = document.querySelector('.incommingFile');
+
+
 
 function setupDataChannel(dataChannel){
+dataChannel.binaryType = "arraybuffer";    
 dataChannel.addEventListener('open', (event)=>{
     messageBox.disabled = false;
     messageBox.focus();
@@ -63,16 +74,66 @@ dataChannel.addEventListener('close', (event)=>{
     sendButton.disabled = true;
 });
 
+
+const receivedChunks =[];
+
 dataChannel.addEventListener('message', (event)=>{
-    const message = event.data;
-    incommingMessage.textContent += message + '\n'; 
-});
+    if(typeof event.data === "string"){
+      const message = event.data;
+    const p = document.createElement('p');
+p.textContent = message;
+incommingMessage.appendChild(p);
+return;
+    }else
+{
+   
+        const fullFile = new Blob([event.data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(fullFile);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "received_file.pdf";
+        a.textContent = "Download received file";
+        a.style.display = "block"; 
+        incommingFile.appendChild(a); 
+    
+   
 }
 
-sendButton.addEventListener('click', (event)=>{
-    const message = messageBox.value;
-    dataChannel.send({message});
 });
+
+
+}
+
+sendButton.addEventListener('click', ()=>{
+    const message = messageBox.value;
+    console.log(dataChannel);
+    if (!dataChannel || dataChannel.readyState !== "open") {
+        console.log("DataChannel not ready");
+        return;
+    }
+    dataChannel.send(messageBox.value);
+});
+
+fileButton.addEventListener('click', (event)=>{
+    
+    console.log(dataChannel);
+    if (!dataChannel || dataChannel.readyState !== "open") {
+        console.log("DataChannel not ready");
+        return;
+    }
+    const file =attachFile.files[0];
+    if(!file){
+        alert("No file seleceted");
+        return;
+    }
+    file.arrayBuffer().then(buffer => {
+        dataChannel.send(buffer);
+    });
+
+})
+
+
 
 
 
