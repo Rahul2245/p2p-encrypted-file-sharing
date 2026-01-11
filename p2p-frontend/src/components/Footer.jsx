@@ -47,7 +47,7 @@ const Footer = () => {
 
       {/* Bottom line */}
       <div className="footer-bottom">
-        © 2026 PeerVault · built for winter project
+        © 2026 PeerVault · Nothing stored, everything shared
       </div>
     </footer>
   );
