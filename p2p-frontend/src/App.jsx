@@ -1,24 +1,28 @@
-import logo from './logo.svg';
 import './App.css';
+import {BrowserRouter as BR , Routes,Route} from "react-router-dom"
+
+import Layout from "./layout/Layout";
+import Home from "./pages/Home";
+import ShareLink from "./pages/ShareLink";
+import Receive from "./pages/Receive";
+import Upload from "./pages/Upload";
+import Complete from "./pages/Complete";
+import Error from "./pages/Error";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <BR>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home/>}/>     
+          <Route path="/sharelink" element={<ShareLink/>}/>
+          <Route path="/receive" element={<Receive/>}/> 
+          <Route path="/upload" element={<Upload/>}/> 
+          <Route path="/complete" element={<Complete/>}/> 
+          <Route path="/error" element={<Error/>}/>
+        </Route> 
+          </Routes>
+    </BR>
   );
 }
 

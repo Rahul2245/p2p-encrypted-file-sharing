@@ -1,0 +1,134 @@
+/* ---------- VARIABLES ---------- */
+:root {
+  --bg: #18181B;           /* Dark Coffee */
+  --primary: #F59E0B;      /* Amber Orange */
+  --primary-hover: #D97706;/* Deep Amber */
+  --text: #FAFAFA;         /* Soft White */
+  --muted: #A1A1AA;        /* Gray */
+  --border: #3F3F46;       /* Warm Gray */
+}
+
+/* ---------- RESET ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+}
+
+/* ---------- HEADER ---------- */
+.header {
+  width: 100%;
+  background-color: var(--bg);
+  padding: 24px 80px;
+  display: flex;
+  justify-content: center; /* center inner container */
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-inner {
+  width: 100%;
+  max-width: 1280px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ---------- BRAND ---------- */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo {
+  height: 48px;
+  width: auto;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--text);
+}
+
+.brand-accent {
+  color: var(--primary);
+  letter-spacing: 0.3px;
+}
+
+.brand-tagline {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ---------- NAVIGATION ---------- */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.nav a {
+  color: var(--text);
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 500;
+  transition: color 0.2s ease, border-bottom 0.2s ease;
+  padding-bottom: 2px;
+  position: relative;
+}
+
+.nav a:hover {
+  color: var(--primary);
+}
+
+.nav a.nav-highlight {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Optional: underline animation on hover */
+.nav a::after {
+  content: "";
+  position: absolute;
+  width: 0%;
+  height: 2px;
+  left: 0;
+  bottom: -2px;
+  background-color: var(--primary);
+  transition: width 0.3s ease;
+}
+
+.nav a:hover::after {
+  width: 100%;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 768px) {
+  .header {
+    padding: 12px 20px;
+  }
+
+  .nav {
+    gap: 15px;
+  }
+
+  .brand-name {
+    font-size: 20px;
+  }
+
+  .brand-tagline {
+    font-size: 11px;
+  }
+}
