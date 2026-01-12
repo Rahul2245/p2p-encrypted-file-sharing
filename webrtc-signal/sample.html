@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Socket.IO Test</title>
+</head>
+<body>
+  <h1>Hello</h1>
+  <div class="messageBox">
+    <input type="text">
+  </div>
+
+  <div class="sendbutton">
+    <button>send</button>
+  </div>
+
+  <div class="incommingMessages">
+    
+  </div>
+
+  <div class="fileAttach"><input type="file" id="fileInput"></div>
+  <div class="fileButton"><button id="sendFile">Send File</button></div>
+  <div class="incommingFile"> </div>
+
+  
+ 
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script type="module">
+
+
+ const socket = io("https://10.126.6.237:9000");
+//  , {key : readFileSync('./cert/cert.key'),
+// cert : readFileSync('./cert/cert.crt')});
+
+// const roomid = crypto.randomUUID();
+const roomid = window.location.pathname.substring(1) || "test-room";
+
+
+socket.on('connect', ()=>{
+    console.log('connected to server:',socket.id);
+    socket.emit('join-room',{ roomid });
+});
+
+const configuration = {'iceServers' : [{'urls':'stun:stun.l.google.com:19302'}]};
+const peerConnection = new RTCPeerConnection(configuration);
+let dataChannel;
+
+peerConnection.addEventListener('datachannel', (event) =>{
+     dataChannel = event.channel;
+    setupDataChannel(dataChannel);
+});
+
+
+
+const messageBox = document.querySelector('.messageBox input');
+const sendButton = document.querySelector('.sendbutton button');
+const incommingMessage = document.querySelector('.incommingMessages');
+const fileButton = document.querySelector('#sendFile');
+const attachFile = document.querySelector('#fileInput');
+const incommingFile = document.querySelector('.incommingFile');
+
+
+
+function setupDataChannel(dataChannel){
+dataChannel.binaryType = "arraybuffer";    
+dataChannel.addEventListener('open', (event)=>{
+    messageBox.disabled = false;
+    messageBox.focus();
+    sendButton.disabled = false;
+});
+
+dataChannel.addEventListener('close', (event)=>{
+    messageBox.disabled = true;
+    sendButton.disabled = true;
+});
+
+
+const receivedChunks =[];
+
+dataChannel.addEventListener('message', (event)=>{
+    if(typeof event.data === "string"){
+      const message = event.data;
+    const p = document.createElement('p');
+p.textContent = message;
+incommingMessage.appendChild(p);
+return;
+    }else
+{
+   
+        const fullFile = new Blob([event.data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(fullFile);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "received_file.pdf";
+        a.textContent = "Download received file";
+        a.style.display = "block"; 
+        incommingFile.appendChild(a); 
+    
+   
+}
+
+});
+
+
+}
+
+sendButton.addEventListener('click', ()=>{
+    const message = messageBox.value;
+    console.log(dataChannel);
+    if (!dataChannel || dataChannel.readyState !== "open") {
+        console.log("DataChannel not ready");
+        return;
+    }
+    dataChannel.send(messageBox.value);
+});
+
+fileButton.addEventListener('click', (event)=>{
+    
+    console.log(dataChannel);
+    if (!dataChannel || dataChannel.readyState !== "open") {
+        console.log("DataChannel not ready");
+        return;
+    }
+    const file =attachFile.files[0];
+    if(!file){
+        alert("No file seleceted");
+        return;
+    }
+    file.arrayBuffer().then(buffer => {
+        dataChannel.send(buffer);
+    });
+
+})
+
+
+
+
+
+
+
+
+//connectiom state
+peerConnection.addEventListener('connectionstatechange', event =>{
+    console.log('connection state',peerConnection.connectionState);
+});
+
+//initiator
+socket.on('initiator', async ()=>{
+    console.log('initiating by second peer');
+    dataChannel = peerConnection.createDataChannel("chat");
+    setupDataChannel(dataChannel);
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    socket.emit('offer',{ offer, roomid});
+});
+
+//offer
+socket.on('offer', async (data)=>{
+    const roomid = data.roomid;
+    console.log("received offer");
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    socket.emit('answer',{ answer, roomid});
+});
+
+//answer
+socket.on('answer', async (data)=>{
+    console.log('received answer');
+    const remotedesc = new RTCSessionDescription(data.answer);
+    await peerConnection.setRemoteDescription(remotedesc);
+});
+
+//new-ice-candidate
+socket.on('new-ice-candidate', async (data)=>{
+    console.log('received ICE');
+    if(data.candidate){
+        try{
+            if(peerConnection.remoteDescription){
+                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        
+            }
+        }catch(e){
+            console.error('error adding received ice candidate', e);
+        }
+    }
+});
+
+//ice candidates
+peerConnection.addEventListener('icecandidate', (event)=>{
+    if(event.candidate){
+        console.log('sending ICE');
+        socket.emit('new-ice-candidate',{ candidate: event.candidate, roomid});
+    }
+});
+
+    </script>
+ 
+</body>
+</html>
