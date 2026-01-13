@@ -7,9 +7,11 @@
   --muted: #A1A1AA;
   --border: #3F3F46;
 }
+
+/* PAGE */
 .upload-page {
   min-height: calc(100vh - 140px);
-  background-color: #18181B;
+  background-color: var(--bg);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -30,35 +32,116 @@
   margin-top: 120px;
 }
 
+/* Hide real input */
+.input-file {
+  display: none;
+}
+
+/* Upload Box */
 .upload-box {
-  width: 260px;
-  height: 160px;
-  border: 2px dashed #F59E0B;
-  border-radius: 18px;
+  width: 280px;
+  height: 180px;
+  border: 2px dashed var(--primary);
+  border-radius: 20px;
+  background: linear-gradient(
+    145deg,
+    rgba(245, 158, 11, 0.08),
+    rgba(245, 158, 11, 0.02)
+  );
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 12px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  text-align: center;
+  transition: all 0.35s ease;
 }
 
 .upload-box:hover {
-  background-color: rgba(245, 158, 11, 0.08);
+  transform: translateY(-4px) scale(1.02);
+  background-color: rgba(245, 158, 11, 0.12);
+  box-shadow: 0 20px 40px rgba(245, 158, 11, 0.18);
 }
 
+/* Upload title */
 .upload-title {
-  color: #F59E0B;
+  color: var(--primary);
   font-size: 18px;
   font-weight: 600;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-sub {
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .upload-hint {
   margin-top: 24px;
   margin-left: 24px;
   font-size: 14px;
-  color: #A1A1AA;
+  color: var(--muted);
   max-width: 260px;
 }
+
+/* CLOUD + ARROW ICON */
+.upload-icon {
+  width: 64px;
+  height: 44px;
+  position: relative;
+}
+
+/* Cloud */
+.cloud {
+  width: 64px;
+  height: 26px;
+  background: linear-gradient(
+    180deg,
+    var(--primary),
+    var(--primary-hover)
+  );
+  border-radius: 22px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  box-shadow: 0 10px 24px rgba(245, 158, 11, 0.35);
+}
+
+.cloud::before,
+.cloud::after {
+  content: "";
+  position: absolute;
+  background: linear-gradient(
+    180deg,
+    var(--primary),
+    var(--primary-hover)
+  );
+  border-radius: 50%;
+}
+
+.cloud::before {
+  width: 30px;
+  height: 30px;
+  top: -18px;
+  left: 6px;
+}
+
+.cloud::after {
+  width: 38px;
+  height: 38px;
+  top: -26px;
+  right: 6px;
+}
+
+.upload-box:hover .cloud {
+  transform: translateY(-4px);
+  transition: transform 0.3s ease;
+}
+
 
 /* RIGHT */
 .upload-right {
@@ -70,23 +153,23 @@
 
 .feature-pill {
   background-color: var(--card);
-    padding: 14px 28px;
+  padding: 14px 28px;
   border: 1px solid var(--border);
   border-radius: 16px;
-  color: #FAFAFA;
-  font-size: 14px;
+  color: var(--text);
   width: fit-content;
 }
-.feature-pill h3 {
-      margin-bottom: 10px;
-      font-size: 18px;
-    }
 
-    .feature-pill p {
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.6;
-    }
+.feature-pill h3 {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.feature-pill p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
