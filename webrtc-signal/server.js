@@ -36,34 +36,34 @@ io.on('connection',(socket)=>{
     //forward offer
     socket.on('offer',(data)=>{
         console.log('recieved offer');
-        const roomid = data.roomid;
+        const roomid = data.roomId;
         socket.to(roomid).emit('offer',data);
     })
 
     //forward answer
     socket.on('answer',(data)=>{
         console.log('received answer');
-        const roomid = data.roomid;
-        socket.to(roomid).emit('answer',data);
+        const roomId = data.roomId;
+        socket.to(roomId).emit('answer',data);
     })
 
     //forward ice candidates
     socket.on('new-ice-candidate',(data)=>{
         console.log('forwarded candidate');
-        const roomid = data.roomid;
+        const roomid = data.roomId;
         socket.to(roomid).emit('new-ice-candidate',data);
     })
 
     //join room
     socket.on('join-room',(data)=>{
         console.log('joined room',socket.id);
-        const roomid = data.roomid;
-        console.log(roomid);
-        socket.join(roomid);
-        const clients = io.sockets.adapter.rooms.get(roomid);
+        const roomId = data.roomId;
+        console.log(roomId);
+        socket.join(roomId);
+        const clients = io.sockets.adapter.rooms.get(roomId);
         console.log(clients.size);
         if(clients.size > 1){
-            socket.to(roomid).emit('initiator');
+            socket.to(roomId).emit('initiator',{roomId});
             console.log('more than 2 clients',socket.id);
         }
 

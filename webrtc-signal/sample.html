@@ -37,7 +37,7 @@
   <script type="module">
 
 
- const socket = io("https://10.126.7.149:9000");
+ const socket = io("https://192.168.41.227:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
@@ -45,9 +45,24 @@
 // const roomid = window.location.pathname.substring(1) || "test-room";
 
 
+
+//get roomid if exists
+const params = new URLSearchParams(window.location.search);
+const roomId = params.get("room");
+
+let activeRoomId = null;
+let isSender = false;
+let selectedFile = null;
+
+
+
 socket.on('connect', ()=>{
     console.log('connected to server:',socket.id);
-    socket.emit('join-room',{ roomid });
+    if(roomId){
+   socket.emit('join-room',{ roomId });
+   activeRoomId=roomId;
+}
+    
 });
 
 const configuration = {'iceServers' : [{'urls':'stun:stun.l.google.com:19302'}]};
@@ -72,13 +87,17 @@ const shareLink = document.getElementById("shareLink");
 const qrDiv = document.getElementById("qr");
 
 
-
-function setupDataChannel(dataChannel){
+ function setupDataChannel(dataChannel){
 dataChannel.binaryType = "arraybuffer";    
-dataChannel.addEventListener('open', (event)=>{
+dataChannel.addEventListener('open', async (event)=>{
     messageBox.disabled = false;
     messageBox.focus();
     sendButton.disabled = false;
+       if (isSender && selectedFile && peerConnection.connectionState === 'connected') {
+            console.log('Sending file now...');
+            dataChannel.send(selectedFile);
+        }
+
 });
 
 dataChannel.addEventListener('close', (event)=>{
@@ -87,32 +106,29 @@ dataChannel.addEventListener('close', (event)=>{
 });
 
 
-const receivedChunks =[];
+ dataChannel.addEventListener('message', (event) => {
+        if (typeof event.data === 'string') {
+            const p = document.createElement('p');
+            p.textContent = event.data;
+            incommingMessage.appendChild(p);
+        } else {
+            // Always default type for receiver
+            console.log("got data");
+           const blob = event.data instanceof Blob ? event.data : new Blob([event.data]);
 
-dataChannel.addEventListener('message', (event)=>{
-    if(typeof event.data === "string"){
-      const message = event.data;
-    const p = document.createElement('p');
-p.textContent = message;
-incommingMessage.appendChild(p);
-return;
-    }else
-{
-   
-        const fullFile = new Blob([event.data], { type: 'application/pdf' });
-        const url = URL.createObjectURL(fullFile);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "received_file.pdf";
-        a.textContent = "Download received file";
-        a.style.display = "block"; 
-        incommingFile.appendChild(a); 
-    
-   
-}
+            const url = URL.createObjectURL(blob);
 
-});
+            const a = document.createElement('a');
+            a.href = url;
+           a.download = event.data.name || "received_file";
+
+            document.body.appendChild(a);
+            // a.click();
+            // a.remove();
+
+            console.log('File received and downloaded automatically');
+        }
+    });
 
 
 }
@@ -129,27 +145,17 @@ sendButton.addEventListener('click', ()=>{
 
 fileButton.addEventListener('click', (event)=>{
     
-    console.log(dataChannel);
-    if (!dataChannel || dataChannel.readyState !== "open") {
-        console.log("DataChannel not ready");
-        return;
-    }
-    const file =attachFile.files[0];
-    if(!file){
-        alert("No file seleceted");
-        return;
-    }
-    file.arrayBuffer().then(buffer => {
-        dataChannel.send(buffer);
-    });
-
+     if (!selectedFile) return alert("No file selected");
+    dataChannel.send(selectedFile);
 });
 
+
 attachFile.addEventListener('change',(event)=>{
+    isSender=true;
     if (!attachFile.files.length){ 
         alert('select a proper file');
         return;}
-        const file = attachFile.files[0];
+    selectedFile = attachFile.files[0];
 
         socket.emit('create-link');
 
@@ -167,12 +173,14 @@ attachFile.addEventListener('change',(event)=>{
 //connectiom state
 peerConnection.addEventListener('connectionstatechange', event =>{
     console.log('connection state',peerConnection.connectionState);
+  
 });
 
 //backend response with roomid
-socket.on('link-created',  ({ roomId })=>{
+socket.on('link-created', async ({ roomId })=>{
     const link = `${window.location.origin}/?room=${roomId}`;
-
+     isSender=true;
+activeRoomId = roomId;
 
     shareLink.value=link;
     shareSection.style.display="block";
@@ -180,31 +188,37 @@ socket.on('link-created',  ({ roomId })=>{
     qrDiv.innerHTML = "";
     QRCode.toCanvas(link, { width :200}, (err, canvas)=>{
         if(!err) qrDiv.appendChild(canvas);
-    })
+    });
+   
+    dataChannel = peerConnection.createDataChannel("chat");
+    setupDataChannel(dataChannel);
 
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    socket.emit('offer', { offer, roomId });
 
 
 
 })
 
 //initiator
-socket.on('initiator', async ()=>{
+socket.on('initiator', async (data)=>{
+    const roomId = data.roomId;
     console.log('initiating by second peer');
-    dataChannel = peerConnection.createDataChannel("chat");
-    setupDataChannel(dataChannel);
+    
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
-    socket.emit('offer',{ offer, roomid});
+    socket.emit('offer',{ offer, roomId});
 });
 
 //offer
 socket.on('offer', async (data)=>{
-    const roomid = data.roomid;
+    const roomId = data.roomId;
     console.log("received offer");
     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
-    socket.emit('answer',{ answer, roomid});
+    socket.emit('answer',{ answer, roomId});
 });
 
 //answer
@@ -235,7 +249,7 @@ socket.on('new-ice-candidate', async (data)=>{
 peerConnection.addEventListener('icecandidate', (event)=>{
     if(event.candidate){
         console.log('sending ICE');
-        socket.emit('new-ice-candidate',{ candidate: event.candidate, roomid});
+        socket.emit('new-ice-candidate',{ candidate: event.candidate,  roomId: activeRoomId});
     }
 });
 
