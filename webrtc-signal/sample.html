@@ -17,6 +17,13 @@
     
   </div>
 
+  <div id="shareSection" style="display:none;">
+    <p>Share this link:</p>
+    <input type="text" id="shareLink" readonly />
+
+    <div id="qr"></div>
+  </div>
+
   <div class="fileAttach"><input type="file" id="fileInput"></div>
   <div class="fileButton"><button id="sendFile">Send File</button></div>
   <div class="incommingFile"> </div>
@@ -25,15 +32,17 @@
  
   <script src="/socket.io/socket.io.js"></script>
 
+   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
   <script type="module">
 
 
- const socket = io("https://10.126.5.96:9000");
+ const socket = io("https://10.126.7.149:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
 // const roomid = crypto.randomUUID();
-const roomid = window.location.pathname.substring(1) || "test-room";
+// const roomid = window.location.pathname.substring(1) || "test-room";
 
 
 socket.on('connect', ()=>{
@@ -58,6 +67,9 @@ const incommingMessage = document.querySelector('.incommingMessages');
 const fileButton = document.querySelector('#sendFile');
 const attachFile = document.querySelector('#fileInput');
 const incommingFile = document.querySelector('.incommingFile');
+const shareSection = document.getElementById("shareSection");
+const shareLink = document.getElementById("shareLink");
+const qrDiv = document.getElementById("qr");
 
 
 
@@ -131,7 +143,19 @@ fileButton.addEventListener('click', (event)=>{
         dataChannel.send(buffer);
     });
 
-})
+});
+
+attachFile.addEventListener('change',(event)=>{
+    if (!attachFile.files.length){ 
+        alert('select a proper file');
+        return;}
+        const file = attachFile.files[0];
+
+        socket.emit('create-link');
+
+});
+
+
 
 
 
@@ -144,6 +168,24 @@ fileButton.addEventListener('click', (event)=>{
 peerConnection.addEventListener('connectionstatechange', event =>{
     console.log('connection state',peerConnection.connectionState);
 });
+
+//backend response with roomid
+socket.on('link-created',  ({ roomId })=>{
+    const link = `${window.location.origin}/?room=${roomId}`;
+
+
+    shareLink.value=link;
+    shareSection.style.display="block";
+
+    qrDiv.innerHTML = "";
+    QRCode.toCanvas(link, { width :200}, (err, canvas)=>{
+        if(!err) qrDiv.appendChild(canvas);
+    })
+
+
+
+
+})
 
 //initiator
 socket.on('initiator', async ()=>{
@@ -171,6 +213,8 @@ socket.on('answer', async (data)=>{
     const remotedesc = new RTCSessionDescription(data.answer);
     await peerConnection.setRemoteDescription(remotedesc);
 });
+
+
 
 //new-ice-candidate
 socket.on('new-ice-candidate', async (data)=>{

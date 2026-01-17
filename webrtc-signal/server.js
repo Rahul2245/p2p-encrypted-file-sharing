@@ -4,6 +4,7 @@ import express from 'express'
 import { Server } from 'socket.io'
 import { dirname,join } from "node:path";
 import { fileURLToPath } from "node:url";
+import crypto from "crypto";
 
 
 
@@ -66,7 +67,19 @@ io.on('connection',(socket)=>{
             console.log('more than 2 clients',socket.id);
         }
 
-    })
+    });
+
+    //create-link
+    socket.on('create-link', async (data) => {
+    console.log('link creation');
+     const roomId = crypto.randomBytes(8).toString("hex");
+
+     socket.join(roomId);
+     
+     socket.emit('link-created', {roomId});
+
+
+});
 
 });
 
