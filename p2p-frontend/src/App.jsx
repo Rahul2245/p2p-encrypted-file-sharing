@@ -8,6 +8,10 @@ import Receive from "./pages/Receive";
 import Upload from "./pages/Upload";
 import Complete from "./pages/Complete";
 import Error from "./pages/Error";
+import HowItWorks from "./pages/HowItWorks";
+import AboutUs from "./pages/AboutUs";
+import Security from "./pages/Security";
+
 
 function App() {
   return (
@@ -20,7 +24,10 @@ function App() {
           <Route path="/upload" element={<Upload/>}/> 
           <Route path="/complete" element={<Complete/>}/> 
           <Route path="/error" element={<Error/>}/>
-        </Route> 
+          <Route path="/how-it-works" element={<HowItWorks/>}/>
+          <Route path="/aboutus" element={<AboutUs/>}/>
+          <Route path="/security" element={<Security/>}/>
+        </Route> t-works
           </Routes>
     </BR>
   );

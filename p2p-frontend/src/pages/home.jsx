@@ -1,4 +1,5 @@
 import "./home.css";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
@@ -16,10 +17,12 @@ const Home = () => {
           just fast and private peer-to-peer sharing.
         </p>
 
+
         <div className="hero-actions">
-          <button className="btn btn-primary">Start Sharing</button>
-          <button className="btn btn-secondary">How It Works</button>
-        </div>
+  <Link to="/upload">
+    <button className="btn btn-primary">Start Sharing</button>
+  </Link>
+</div>
       </section>
 
       

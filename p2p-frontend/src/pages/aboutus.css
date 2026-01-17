@@ -1,0 +1,106 @@
+:root {
+  --bg: #18181B;
+  --card: #27272A;
+  --primary: #F59E0B;
+  --primary-hover: #D97706;
+  --text: #FAFAFA;
+  --muted: #A1A1AA;
+  --border: #3F3F46;
+}
+
+/* ---------- PAGE ---------- */
+.about-page {
+  min-height: 100vh;
+  background-color: var(--bg);
+  color: var(--text);
+  padding: 100px 20px 80px;
+  text-align: center;
+}
+
+/* ---------- HEADER ---------- */
+.about-page h1 {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.about-page h1 span {
+  color: var(--primary);
+}
+
+.about-intro {
+  font-size: 18px;
+  color: var(--muted);
+  max-width: 720px;
+  margin: 0 auto 60px;
+  line-height: 1.7;
+}
+
+/* ---------- SECTIONS GRID ---------- */
+.about-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  padding: 0 80px;
+}
+
+/* ---------- CARD ---------- */
+.about-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 30px 28px;
+  transition: transform 0.3s ease;
+}
+
+.about-card:hover {
+  transform: translateY(-6px);
+}
+
+/* ---------- CARD CONTENT ---------- */
+.about-card h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.about-card p {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ---------- CTA ---------- */
+.about-cta {
+  margin-top: 80px;
+}
+
+.about-cta button {
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: var(--primary);
+  color: #000;
+  border: none;
+  transition: 0.3s ease;
+}
+
+.about-cta button:hover {
+  background-color: var(--primary-hover);
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 768px) {
+  .about-page {
+    padding: 80px 16px;
+  }
+
+  .about-page h1 {
+    font-size: 36px;
+  }
+
+  .about-sections {
+    padding: 0 20px;
+  }
+}
