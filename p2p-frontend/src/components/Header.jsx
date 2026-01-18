@@ -22,9 +22,10 @@ const Header = () => {
 
         {/* RIGHT: Navigation */}
         <nav className="nav">
+          <Link to="/">Share</Link>
           <Link to="/receive">Receive</Link>
           <Link to="/how-it-works">How it works</Link>
-          <Link to="/about">About us</Link>
+          <Link to="/aboutus">About us</Link>
           <Link to="/security" >
             Security
           </Link>
