@@ -37,7 +37,7 @@
   <script type="module">
 
 
- const socket = io("https://192.168.41.227:9000");
+ const socket = io("https://172.17.160.1:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
@@ -50,9 +50,15 @@
 const params = new URLSearchParams(window.location.search);
 const roomId = params.get("room");
 
+
 let activeRoomId = null;
 let isSender = false;
 let selectedFile = null;
+const fileChunkSize = 16 * 1024;
+const MAX_BUFFERED_AMOUNT = 1024 * 1024;
+const bufferedAmountLowThreshold  = 512 * 1024;
+
+
 
 
 
@@ -93,9 +99,12 @@ dataChannel.addEventListener('open', async (event)=>{
     messageBox.disabled = false;
     messageBox.focus();
     sendButton.disabled = false;
+    dataChannel.bufferedAmountLowThreshold = bufferedAmountLowThreshold;
        if (isSender && selectedFile && peerConnection.connectionState === 'connected') {
             console.log('Sending file now...');
-            dataChannel.send(selectedFile);
+            const fileChunkingData = filechunking(selectedFile,fileChunkSize);
+            const header = fileMetaGeneration(selectedFile,fileChunkingData);
+            dataChannel.send(JSON.stringify(header));
         }
 
 });
@@ -112,7 +121,7 @@ dataChannel.addEventListener('close', (event)=>{
             p.textContent = event.data;
             incommingMessage.appendChild(p);
         } else {
-            // Always default type for receiver
+           
             console.log("got data");
            const blob = event.data instanceof Blob ? event.data : new Blob([event.data]);
 
@@ -123,8 +132,8 @@ dataChannel.addEventListener('close', (event)=>{
            a.download = event.data.name || "received_file";
 
             document.body.appendChild(a);
-            // a.click();
-            // a.remove();
+            a.click();
+            a.remove();
 
             console.log('File received and downloaded automatically');
         }
@@ -155,20 +164,15 @@ attachFile.addEventListener('change',(event)=>{
     if (!attachFile.files.length){ 
         alert('select a proper file');
         return;}
-    selectedFile = attachFile.files[0];
+        const fileId = crypto.randomUUID();
+    selectedFile = {
+        file:attachFile.files[0],
+        fileId
+    }
 
         socket.emit('create-link');
 
 });
-
-
-
-
-
-
-
-
-
 
 //connectiom state
 peerConnection.addEventListener('connectionstatechange', event =>{
@@ -252,6 +256,64 @@ peerConnection.addEventListener('icecandidate', (event)=>{
         socket.emit('new-ice-candidate',{ candidate: event.candidate,  roomId: activeRoomId});
     }
 });
+
+//file chunking
+function filechunking(selectedFile,fileChunkSize){
+    if(!selectedFile){
+        return;
+    }
+    const chunks = [];
+    let offset = 0;
+    let index = 0;
+
+    while(offset<selectedFile.file.size){
+        const file = selectedFile.file;
+        const chunk = file.slice(offset,offset+fileChunkSize);
+        chunks.push({
+            index:index,
+            chunk:chunk
+        });
+
+        index++;
+        offset += fileChunkSize;
+
+        
+
+    }
+    return({
+            fileName : file.name,
+            fileSize : file.size,
+            chunks : chunks,
+            totalChunks : chunks.length,
+        });
+}
+    //file meta data generation
+
+
+function fileMetaGeneration(selectedFile,fileChunkingData){
+    if(!selectedFile){
+        return;
+    }
+    const file = selectedFile.file;
+
+    return({
+        type : "file-Header",
+        fileName : file.name,
+        fileSize : file.size,
+        totalChunks : fileChunkingData.totalChunks,
+        fileChunkSize : fileChunkSize,
+        fileId:selectedFile.fileId
+
+
+    });
+
+
+}
+
+
+
+
+
 
     </script>
  
