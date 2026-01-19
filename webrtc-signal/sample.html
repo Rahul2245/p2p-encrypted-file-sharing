@@ -60,6 +60,10 @@ const bufferedAmountLowThreshold  = 512 * 1024;
 let incomingFileMeta = null;
 let receivedChunks = [];
 let receivedChunkCount = 0;
+let expectedChunkIndex = null;
+
+
+
 
 
 
@@ -106,11 +110,11 @@ dataChannel.addEventListener('open', async (event)=>{
     dataChannel.bufferedAmountLowThreshold = bufferedAmountLowThreshold;
        if (isSender && selectedFile && peerConnection.connectionState === 'connected') {
             console.log('Sending file now...');
-            const fileChunkingData = filechunking(selectedFile,fileChunkSize);
-            const header = fileMetaGeneration(selectedFile,fileChunkingData);
+            const chunks  = filechunking(selectedFile,fileChunkSize);
+            const header = fileMetaGeneration(selectedFile,chunks.length);
             dataChannel.send(JSON.stringify(header));
 
-            sendDataChunks(dataChannel, fileChunkingData.chunks);
+            sendDataChunks(dataChannel, chunks);
         }
 
 });
@@ -121,46 +125,49 @@ dataChannel.addEventListener('close', (event)=>{
 });
 
 
- dataChannel.addEventListener('message', (event) => {
-        if (typeof event.data === 'string') {
-            const parsed = JSON.parse(event.data);
+dataChannel.addEventListener('message', (event) => {
 
-            if(parsed.type === "file-Header"){
-                incomingFileMeta = parsed;
-                receivedChunks = new Array(incomingFileMeta.totalChunks);
-                receivedChunkCount = 0;
-                console.log("file header received",incomingFileMeta);
-                return;
+  // ✅ TEXT (JSON)
+  if (typeof event.data === 'string') {
+    const msg = JSON.parse(event.data);
 
-            }
+    if (msg.type === "file-Header") {
+      incomingFileMeta = msg;
+      receivedChunks = new Array(msg.totalChunks);
+      receivedChunkCount = 0;
+      console.log("file header received", incomingFileMeta);
+      return;
+    }
 
+    if (msg.type === "file-chunk-meta") {
+      expectedChunkIndex = msg.index;
+      return;
+    }
 
-            const p = document.createElement('p');
-            p.textContent = event.data;
-            incommingMessage.appendChild(p);
-            return;
-        } 
+    // normal chat message
+    const p = document.createElement('p');
+    p.textContent = msg;
+    incommingMessage.appendChild(p);
+    return;
+  }
 
-        if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
-            const incommingDataChunk = event.data;
+  // ✅ BINARY (ArrayBuffer)
+  if (event.data instanceof ArrayBuffer) {
+    if (expectedChunkIndex === null) {
+      console.error("Binary arrived without metadata");
+      return;
+    }
 
-            if(!incomingFileMeta){
-                console.log("chunk received before header");
-            }
-            const index = incommingDataChunk.index;
-            const chunk = incommingDataChunk.chunk;
+    receivedChunks[expectedChunkIndex] = event.data;
+    receivedChunkCount++;
+    expectedChunkIndex = null;
 
-            receivedChunks[index] = chunk;
-            receivedChunkCount++;
+    if (receivedChunkCount === incomingFileMeta.totalChunks) {
+      assembleAndDownload();
+    }
+  }
+});
 
-            if(receivedChunkCount === incomingFileMeta.totalChunks){
-                assembleAndDownload();
-            }
-        }
-    });
-
-
-}
 
 sendButton.addEventListener('click', ()=>{
     const message = messageBox.value;
@@ -172,12 +179,7 @@ sendButton.addEventListener('click', ()=>{
     dataChannel.send(messageBox.value);
 });
 
-fileButton.addEventListener('click', (event)=>{
-    
-     if (!selectedFile) return alert("No file selected");
-    dataChannel.send(selectedFile);
-});
-
+ }
 
 attachFile.addEventListener('change',(event)=>{
     isSender=true;
@@ -286,8 +288,11 @@ function filechunking(selectedFile,fileChunkSize){
     let offset = 0;
     let index = 0;
 
-    while(offset<selectedFile.file.size){
-        const file = selectedFile.file;
+     const file = selectedFile.file;
+
+
+    while(offset < file.size){
+        
         const chunk = file.slice(offset,offset+fileChunkSize);
         chunks.push({
             index:index,
@@ -300,17 +305,10 @@ function filechunking(selectedFile,fileChunkSize){
         
 
     }
-    return({
-            fileName : file.name,
-            fileSize : file.size,
-            chunks : chunks,
-            totalChunks : chunks.length,
-        });
+     return chunks;
 }
     //file meta data generation
-
-
-function fileMetaGeneration(selectedFile,fileChunkingData){
+function fileMetaGeneration(selectedFile,totalChunks){
     if(!selectedFile){
         return;
     }
@@ -320,7 +318,7 @@ function fileMetaGeneration(selectedFile,fileChunkingData){
         type : "file-Header",
         fileName : file.name,
         fileSize : file.size,
-        totalChunks : fileChunkingData.totalChunks,
+        totalChunks : totalChunks,
         fileChunkSize : fileChunkSize,
         fileId:selectedFile.fileId
 
@@ -331,35 +329,36 @@ function fileMetaGeneration(selectedFile,fileChunkingData){
 }
 
 //sending data chunks
-function sendDataChunks(DataChannel,Chunks){
-    let currentIndex =0;
-   
-    function sendNextChunk() {
-        if(currentIndex>Chunks.length){
-            console.log("all sent");
-            return;
+async function sendDataChunks(dataChannel, chunks) {
+    let index = 0;
+
+    dataChannel.bufferedAmountLowThreshold = bufferedAmountLowThreshold;
+
+    while (index < chunks.length) {
+
+       
+        if (dataChannel.bufferedAmount > MAX_BUFFERED_AMOUNT) {
+            await new Promise(resolve => {
+                dataChannel.onbufferedamountlow = resolve;
+            });
         }
 
-        if(DataChannel.bufferAmount>MAX_BUFFERED_AMOUNT){
-            console.log("Buffer full, pausing...");
-            return;
-        }
+        const chunkObj = chunks[index];
 
-        const ChunkData = Chunks[currentIndex];
-        DataChannel.send(ChunkData);
-        currentIndex++;
-        
-        sendNextChunk();
+       
+        dataChannel.send(JSON.stringify({
+            type: "file-chunk-meta",
+            index: chunkObj.index
+        }));
 
         
+        const buffer = await chunkObj.chunk.arrayBuffer();
+        dataChannel.send(buffer);
 
+        index++;
     }
-    DataChannel.onbufferedamountlow  =()=>{
-        sendNextChunk();
 
-    }
-    sendNextChunk();
-
+    console.log("All chunks sent");
 }
 
 
@@ -373,6 +372,18 @@ function assembleAndDownload(){
     incomingFileMeta = null;
     receivedChunks = [];
 
+}
+
+
+//download the given file
+function download(url, fileName){
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
 }
 
 
