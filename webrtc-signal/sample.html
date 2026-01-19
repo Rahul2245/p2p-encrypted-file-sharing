@@ -57,6 +57,10 @@ let selectedFile = null;
 const fileChunkSize = 16 * 1024;
 const MAX_BUFFERED_AMOUNT = 1024 * 1024;
 const bufferedAmountLowThreshold  = 512 * 1024;
+let incomingFileMeta = null;
+let receivedChunks = [];
+let receivedChunkCount = 0;
+
 
 
 
@@ -105,6 +109,8 @@ dataChannel.addEventListener('open', async (event)=>{
             const fileChunkingData = filechunking(selectedFile,fileChunkSize);
             const header = fileMetaGeneration(selectedFile,fileChunkingData);
             dataChannel.send(JSON.stringify(header));
+
+            sendDataChunks(dataChannel, fileChunkingData.chunks);
         }
 
 });
@@ -117,25 +123,39 @@ dataChannel.addEventListener('close', (event)=>{
 
  dataChannel.addEventListener('message', (event) => {
         if (typeof event.data === 'string') {
+            const parsed = JSON.parse(event.data);
+
+            if(parsed.type === "file-Header"){
+                incomingFileMeta = parsed;
+                receivedChunks = new Array(incomingFileMeta.totalChunks);
+                receivedChunkCount = 0;
+                console.log("file header received",incomingFileMeta);
+                return;
+
+            }
+
+
             const p = document.createElement('p');
             p.textContent = event.data;
             incommingMessage.appendChild(p);
-        } else {
-           
-            console.log("got data");
-           const blob = event.data instanceof Blob ? event.data : new Blob([event.data]);
+            return;
+        } 
 
-            const url = URL.createObjectURL(blob);
+        if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
+            const incommingDataChunk = event.data;
 
-            const a = document.createElement('a');
-            a.href = url;
-           a.download = event.data.name || "received_file";
+            if(!incomingFileMeta){
+                console.log("chunk received before header");
+            }
+            const index = incommingDataChunk.index;
+            const chunk = incommingDataChunk.chunk;
 
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
+            receivedChunks[index] = chunk;
+            receivedChunkCount++;
 
-            console.log('File received and downloaded automatically');
+            if(receivedChunkCount === incomingFileMeta.totalChunks){
+                assembleAndDownload();
+            }
         }
     });
 
@@ -310,8 +330,50 @@ function fileMetaGeneration(selectedFile,fileChunkingData){
 
 }
 
+//sending data chunks
+function sendDataChunks(DataChannel,Chunks){
+    let currentIndex =0;
+   
+    function sendNextChunk() {
+        if(currentIndex>Chunks.length){
+            console.log("all sent");
+            return;
+        }
+
+        if(DataChannel.bufferAmount>MAX_BUFFERED_AMOUNT){
+            console.log("Buffer full, pausing...");
+            return;
+        }
+
+        const ChunkData = Chunks[currentIndex];
+        DataChannel.send(ChunkData);
+        currentIndex++;
+        
+        sendNextChunk();
+
+        
+
+    }
+    DataChannel.onbufferedamountlow  =()=>{
+        sendNextChunk();
+
+    }
+    sendNextChunk();
+
+}
 
 
+// assembling the chunks
+function assembleAndDownload(){
+    const blob = new Blob(receivedChunks);
+    const url = URL.createObjectURL(blob);
+
+    download(url,incomingFileMeta.fileName);
+
+    incomingFileMeta = null;
+    receivedChunks = [];
+
+}
 
 
 
