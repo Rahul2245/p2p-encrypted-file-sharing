@@ -37,7 +37,7 @@
   <script type="module">
 
 
- const socket = io("https://192.168.41.227:9000");
+ const socket = io("https://10.126.7.149:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
@@ -50,9 +50,23 @@
 const params = new URLSearchParams(window.location.search);
 const roomId = params.get("room");
 
+
 let activeRoomId = null;
 let isSender = false;
 let selectedFile = null;
+const fileChunkSize = 16 * 1024;
+const MAX_BUFFERED_AMOUNT = 1024 * 1024;
+const bufferedAmountLowThreshold  = 512 * 1024;
+let incomingFileMeta = null;
+let receivedChunks = [];
+let receivedChunkCount = 0;
+let expectedChunkIndex = null;
+
+
+
+
+
+
 
 
 
@@ -93,9 +107,14 @@ dataChannel.addEventListener('open', async (event)=>{
     messageBox.disabled = false;
     messageBox.focus();
     sendButton.disabled = false;
+    dataChannel.bufferedAmountLowThreshold = bufferedAmountLowThreshold;
        if (isSender && selectedFile && peerConnection.connectionState === 'connected') {
             console.log('Sending file now...');
-            dataChannel.send(selectedFile);
+            const chunks  = filechunking(selectedFile,fileChunkSize);
+            const header = fileMetaGeneration(selectedFile,chunks.length);
+            dataChannel.send(JSON.stringify(header));
+
+            sendDataChunks(dataChannel, chunks);
         }
 
 });
@@ -106,32 +125,49 @@ dataChannel.addEventListener('close', (event)=>{
 });
 
 
- dataChannel.addEventListener('message', (event) => {
-        if (typeof event.data === 'string') {
-            const p = document.createElement('p');
-            p.textContent = event.data;
-            incommingMessage.appendChild(p);
-        } else {
-            // Always default type for receiver
-            console.log("got data");
-           const blob = event.data instanceof Blob ? event.data : new Blob([event.data]);
+dataChannel.addEventListener('message', (event) => {
 
-            const url = URL.createObjectURL(blob);
+  // ✅ TEXT (JSON)
+  if (typeof event.data === 'string') {
+    const msg = JSON.parse(event.data);
 
-            const a = document.createElement('a');
-            a.href = url;
-           a.download = event.data.name || "received_file";
+    if (msg.type === "file-Header") {
+      incomingFileMeta = msg;
+      receivedChunks = new Array(msg.totalChunks);
+      receivedChunkCount = 0;
+      console.log("file header received", incomingFileMeta);
+      return;
+    }
 
-            document.body.appendChild(a);
-            // a.click();
-            // a.remove();
+    if (msg.type === "file-chunk-meta") {
+      expectedChunkIndex = msg.index;
+      return;
+    }
 
-            console.log('File received and downloaded automatically');
-        }
-    });
+    // normal chat message
+    const p = document.createElement('p');
+    p.textContent = msg;
+    incommingMessage.appendChild(p);
+    return;
+  }
 
+  // ✅ BINARY (ArrayBuffer)
+  if (event.data instanceof ArrayBuffer) {
+    if (expectedChunkIndex === null) {
+      console.error("Binary arrived without metadata");
+      return;
+    }
 
-}
+    receivedChunks[expectedChunkIndex] = event.data;
+    receivedChunkCount++;
+    expectedChunkIndex = null;
+
+    if (receivedChunkCount === incomingFileMeta.totalChunks) {
+      assembleAndDownload();
+    }
+  }
+});
+
 
 sendButton.addEventListener('click', ()=>{
     const message = messageBox.value;
@@ -143,32 +179,22 @@ sendButton.addEventListener('click', ()=>{
     dataChannel.send(messageBox.value);
 });
 
-fileButton.addEventListener('click', (event)=>{
-    
-     if (!selectedFile) return alert("No file selected");
-    dataChannel.send(selectedFile);
-});
-
+ }
 
 attachFile.addEventListener('change',(event)=>{
     isSender=true;
     if (!attachFile.files.length){ 
         alert('select a proper file');
         return;}
-    selectedFile = attachFile.files[0];
+        const fileId = crypto.randomUUID();
+    selectedFile = {
+        file:attachFile.files[0],
+        fileId
+    }
 
         socket.emit('create-link');
 
 });
-
-
-
-
-
-
-
-
-
 
 //connectiom state
 peerConnection.addEventListener('connectionstatechange', event =>{
@@ -252,6 +278,144 @@ peerConnection.addEventListener('icecandidate', (event)=>{
         socket.emit('new-ice-candidate',{ candidate: event.candidate,  roomId: activeRoomId});
     }
 });
+
+//file chunking
+function filechunking(selectedFile,fileChunkSize){
+    if(!selectedFile){
+        return;
+    }
+    const chunks = [];
+    let offset = 0;
+    let index = 0;
+
+     const file = selectedFile.file;
+
+
+    while(offset < file.size){
+        
+        const chunk = file.slice(offset,offset+fileChunkSize);
+        chunks.push({
+            index:index,
+            chunk:chunk
+        });
+
+        index++;
+        offset += fileChunkSize;
+
+        
+
+    }
+     return chunks;
+}
+    //file meta data generation
+function fileMetaGeneration(selectedFile,totalChunks){
+    if(!selectedFile){
+        return;
+    }
+    const file = selectedFile.file;
+
+    return({
+        type : "file-Header",
+        fileName : file.name,
+        fileSize : file.size,
+        fileType: file.type,
+        totalChunks : totalChunks,
+        fileChunkSize : fileChunkSize,
+        fileId:selectedFile.fileId
+
+
+    });
+
+
+}
+
+//sending data chunks
+async function sendDataChunks(dataChannel, chunks) {
+    let index = 0;
+
+    dataChannel.bufferedAmountLowThreshold = bufferedAmountLowThreshold;
+
+    while (index < chunks.length) {
+
+       
+       if (dataChannel.bufferedAmount > MAX_BUFFERED_AMOUNT) {
+            console.log("Buffer full, waiting...");
+            await new Promise(resolve => {
+                const handler = () => {
+                    dataChannel.removeEventListener('bufferedamountlow', handler);
+                    resolve();
+                };
+                dataChannel.addEventListener('bufferedamountlow', handler);
+            });
+        }
+
+        const chunkObj = chunks[index];
+
+       
+        dataChannel.send(JSON.stringify({
+            type: "file-chunk-meta",
+            index: chunkObj.index
+        }));
+
+        
+       try {
+            const buffer = await chunkObj.chunk.arrayBuffer();
+            dataChannel.send(buffer);
+        } catch (err) {
+            console.error("Error reading chunk:", err);
+            return;
+        }
+        index++;
+
+        const progress = Math.round((index/chunks.length)*100);
+        console.log(`sending: ${progress}%`);
+    }
+
+    console.log("All chunks sent");
+}
+
+
+// assembling the chunks
+function assembleAndDownload(){
+    for (let i = 0; i < incomingFileMeta.totalChunks; i++) {
+        if (!receivedChunks[i]) {
+            console.error(`File corrupted: Missing chunk index ${i}`);
+            alert("Transfer failed: Packet loss detected.");
+            return;
+        }
+    }
+    const blob = new Blob(receivedChunks,{
+        type: incomingFileMeta.fileType 
+    });
+    if (blob.size !== incomingFileMeta.fileSize) {
+        console.error(`Size mismatch! Expected ${incomingFileMeta.fileSize}, got ${blob.size}`);
+        alert("File corrupted: Size mismatch.");
+        return;
+    }
+    console.log("File assembled successfully. Size:", blob.size);
+    const url = URL.createObjectURL(blob);
+
+    download(url,incomingFileMeta.fileName);
+
+    incomingFileMeta = null;
+    receivedChunks = [];
+    receivedChunkCount = 0;
+
+}
+
+
+//download the given file
+function download(url, fileName){
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+}
+
+
 
     </script>
  
