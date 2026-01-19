@@ -37,7 +37,7 @@
   <script type="module">
 
 
- const socket = io("https://172.17.160.1:9000");
+ const socket = io("https://10.126.7.149:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
@@ -318,6 +318,7 @@ function fileMetaGeneration(selectedFile,totalChunks){
         type : "file-Header",
         fileName : file.name,
         fileSize : file.size,
+        fileType: file.type,
         totalChunks : totalChunks,
         fileChunkSize : fileChunkSize,
         fileId:selectedFile.fileId
@@ -337,9 +338,14 @@ async function sendDataChunks(dataChannel, chunks) {
     while (index < chunks.length) {
 
        
-        if (dataChannel.bufferedAmount > MAX_BUFFERED_AMOUNT) {
+       if (dataChannel.bufferedAmount > MAX_BUFFERED_AMOUNT) {
+            console.log("Buffer full, waiting...");
             await new Promise(resolve => {
-                dataChannel.onbufferedamountlow = resolve;
+                const handler = () => {
+                    dataChannel.removeEventListener('bufferedamountlow', handler);
+                    resolve();
+                };
+                dataChannel.addEventListener('bufferedamountlow', handler);
             });
         }
 
@@ -352,10 +358,17 @@ async function sendDataChunks(dataChannel, chunks) {
         }));
 
         
-        const buffer = await chunkObj.chunk.arrayBuffer();
-        dataChannel.send(buffer);
-
+       try {
+            const buffer = await chunkObj.chunk.arrayBuffer();
+            dataChannel.send(buffer);
+        } catch (err) {
+            console.error("Error reading chunk:", err);
+            return;
+        }
         index++;
+
+        const progress = Math.round((index/chunks.length)*100);
+        console.log(`sending: ${progress}%`);
     }
 
     console.log("All chunks sent");
@@ -364,13 +377,29 @@ async function sendDataChunks(dataChannel, chunks) {
 
 // assembling the chunks
 function assembleAndDownload(){
-    const blob = new Blob(receivedChunks);
+    for (let i = 0; i < incomingFileMeta.totalChunks; i++) {
+        if (!receivedChunks[i]) {
+            console.error(`File corrupted: Missing chunk index ${i}`);
+            alert("Transfer failed: Packet loss detected.");
+            return;
+        }
+    }
+    const blob = new Blob(receivedChunks,{
+        type: incomingFileMeta.fileType 
+    });
+    if (blob.size !== incomingFileMeta.fileSize) {
+        console.error(`Size mismatch! Expected ${incomingFileMeta.fileSize}, got ${blob.size}`);
+        alert("File corrupted: Size mismatch.");
+        return;
+    }
+    console.log("File assembled successfully. Size:", blob.size);
     const url = URL.createObjectURL(blob);
 
     download(url,incomingFileMeta.fileName);
 
     incomingFileMeta = null;
     receivedChunks = [];
+    receivedChunkCount = 0;
 
 }
 
