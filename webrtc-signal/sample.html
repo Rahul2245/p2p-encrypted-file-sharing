@@ -63,6 +63,7 @@ let receivedChunkCount = 0;
 let expectedChunkIndex = null;
 let RSA_KEY_PAIR = null;
 let FILECHUNK_ENCRYPTION_KEY = null;
+let REMOTE_RSA_PUBLIC_KEY = null;
 
 
 
@@ -80,6 +81,31 @@ async function generateRSAKeyPair() {
         ["encrypt", "decrypt"]
     );
     return RSA_KEY_PAIR;
+}
+
+//exporting RSA public key
+async function exportRSAPublicKey(publicKey) {
+    const exported = await crypto.subtle.exportKey(
+        "spki",
+        publicKey
+    );
+    return exported;
+}
+
+//importing RSA public key
+async function importRSAPublicKey(keyArray){
+    const keyBuffer = new Uint8Array(keyArray).buffer;
+
+    return await crypto.subtle.importKey(
+        "spki",
+        keyBuffer,
+        {
+            name: "RSA-OAEP",
+            hash: "SHA-256"
+        },
+        true,
+        ["encrypt"]
+    );
 }
 
 
@@ -137,6 +163,14 @@ dataChannel.addEventListener('open', async (event)=>{
     messageBox.focus();
     sendButton.disabled = false;
     dataChannel.bufferedAmountLowThreshold = bufferedAmountLowThreshold;
+       if(!isSender){
+         const publicKeyBuffer = await exportRSAPublicKey(RSA_KEY_PAIR.publicKey);
+
+         dataChannel.send(JSON.stringify({
+            type: "rsa-public-key",
+            key: Array.from(new Uint8Array(publicKeyBuffer))
+         }));
+       }
        if (isSender && selectedFile && peerConnection.connectionState === 'connected') {
             console.log('Sending file now...');
             const chunks  = filechunking(selectedFile,fileChunkSize);
@@ -146,6 +180,8 @@ dataChannel.addEventListener('open', async (event)=>{
             sendDataChunks(dataChannel, chunks);
         }
 
+        
+
 });
 
 dataChannel.addEventListener('close', (event)=>{
@@ -154,7 +190,7 @@ dataChannel.addEventListener('close', (event)=>{
 });
 
 
-dataChannel.addEventListener('message', (event) => {
+dataChannel.addEventListener('message', async (event) => {
 
  
   if (typeof event.data === 'string') {
@@ -165,12 +201,20 @@ dataChannel.addEventListener('message', (event) => {
       receivedChunks = new Array(msg.totalChunks);
       receivedChunkCount = 0;
       console.log("file header received", incomingFileMeta);
+
+     
       return;
     }
 
     if (msg.type === "file-chunk-meta") {
       expectedChunkIndex = msg.index;
       return;
+    }
+
+    if(msg.type === "rsa-public-key"){
+        REMOTE_RSA_PUBLIC_KEY = await importRSAPublicKey(msg.key);
+        console.log("RSA public key received ,imported");
+        return;
     }
 
     // normal chat message
