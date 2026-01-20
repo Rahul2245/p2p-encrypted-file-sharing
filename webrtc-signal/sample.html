@@ -37,7 +37,7 @@
   <script type="module">
 
 
- const socket = io("https://10.126.7.149:9000");
+ const socket = io("https://10.126.3.163:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
@@ -127,7 +127,7 @@ dataChannel.addEventListener('close', (event)=>{
 
 dataChannel.addEventListener('message', (event) => {
 
-  // ✅ TEXT (JSON)
+ 
   if (typeof event.data === 'string') {
     const msg = JSON.parse(event.data);
 
@@ -151,7 +151,7 @@ dataChannel.addEventListener('message', (event) => {
     return;
   }
 
-  // ✅ BINARY (ArrayBuffer)
+  
   if (event.data instanceof ArrayBuffer) {
     if (expectedChunkIndex === null) {
       console.error("Binary arrived without metadata");
@@ -169,7 +169,10 @@ dataChannel.addEventListener('message', (event) => {
 });
 
 
-sendButton.addEventListener('click', ()=>{
+
+
+ }
+ sendButton.addEventListener('click', ()=>{
     const message = messageBox.value;
     console.log(dataChannel);
     if (!dataChannel || dataChannel.readyState !== "open") {
@@ -178,8 +181,6 @@ sendButton.addEventListener('click', ()=>{
     }
     dataChannel.send(messageBox.value);
 });
-
- }
 
 attachFile.addEventListener('change',(event)=>{
     isSender=true;
