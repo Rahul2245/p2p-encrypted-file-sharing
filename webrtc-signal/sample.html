@@ -37,7 +37,7 @@
   <script type="module">
 
 
- const socket = io("https://10.126.7.149:9000");
+ const socket = io("https://10.126.3.163:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
@@ -61,13 +61,68 @@ let incomingFileMeta = null;
 let receivedChunks = [];
 let receivedChunkCount = 0;
 let expectedChunkIndex = null;
+let RSA_KEY_PAIR = null;
+let FILECHUNK_ENCRYPTION_KEY = null;
+let REMOTE_RSA_PUBLIC_KEY = null;
 
 
 
 
+//asymmetric key generation
+async function generateRSAKeyPair() {
+    RSA_KEY_PAIR = await crypto.subtle.generateKey(
+        {
+            name: "RSA-OAEP",
+            modulusLength: 2048,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256"
+        },
+        true,
+        ["encrypt", "decrypt"]
+    );
+    return RSA_KEY_PAIR;
+}
+
+//exporting RSA public key
+async function exportRSAPublicKey(publicKey) {
+    const exported = await crypto.subtle.exportKey(
+        "spki",
+        publicKey
+    );
+    return exported;
+}
+
+//importing RSA public key
+async function importRSAPublicKey(keyArray){
+    const keyBuffer = new Uint8Array(keyArray).buffer;
+
+    return await crypto.subtle.importKey(
+        "spki",
+        keyBuffer,
+        {
+            name: "RSA-OAEP",
+            hash: "SHA-256"
+        },
+        true,
+        ["encrypt"]
+    );
+}
 
 
+// symmetric key generation
+async function SymmetricKeyGenerate(){
+    const aesKey = await crypto.subtle.generateKey(
+        {
+            name : "AES-GCM",
+            length : 256
+        },
+        true,
+        ["encrypt", "decrypt"]
+    );
+    FILECHUNK_ENCRYPTION_KEY = aesKey;
 
+      return aesKey;
+}
 
 
 socket.on('connect', ()=>{
@@ -108,6 +163,14 @@ dataChannel.addEventListener('open', async (event)=>{
     messageBox.focus();
     sendButton.disabled = false;
     dataChannel.bufferedAmountLowThreshold = bufferedAmountLowThreshold;
+       if(!isSender){
+         const publicKeyBuffer = await exportRSAPublicKey(RSA_KEY_PAIR.publicKey);
+
+         dataChannel.send(JSON.stringify({
+            type: "rsa-public-key",
+            key: Array.from(new Uint8Array(publicKeyBuffer))
+         }));
+       }
        if (isSender && selectedFile && peerConnection.connectionState === 'connected') {
             console.log('Sending file now...');
             const chunks  = filechunking(selectedFile,fileChunkSize);
@@ -117,6 +180,8 @@ dataChannel.addEventListener('open', async (event)=>{
             sendDataChunks(dataChannel, chunks);
         }
 
+        
+
 });
 
 dataChannel.addEventListener('close', (event)=>{
@@ -125,9 +190,9 @@ dataChannel.addEventListener('close', (event)=>{
 });
 
 
-dataChannel.addEventListener('message', (event) => {
+dataChannel.addEventListener('message', async (event) => {
 
-  // ✅ TEXT (JSON)
+ 
   if (typeof event.data === 'string') {
     const msg = JSON.parse(event.data);
 
@@ -136,12 +201,20 @@ dataChannel.addEventListener('message', (event) => {
       receivedChunks = new Array(msg.totalChunks);
       receivedChunkCount = 0;
       console.log("file header received", incomingFileMeta);
+
+     
       return;
     }
 
     if (msg.type === "file-chunk-meta") {
       expectedChunkIndex = msg.index;
       return;
+    }
+
+    if(msg.type === "rsa-public-key"){
+        REMOTE_RSA_PUBLIC_KEY = await importRSAPublicKey(msg.key);
+        console.log("RSA public key received ,imported");
+        return;
     }
 
     // normal chat message
@@ -151,7 +224,7 @@ dataChannel.addEventListener('message', (event) => {
     return;
   }
 
-  // ✅ BINARY (ArrayBuffer)
+  
   if (event.data instanceof ArrayBuffer) {
     if (expectedChunkIndex === null) {
       console.error("Binary arrived without metadata");
@@ -169,7 +242,10 @@ dataChannel.addEventListener('message', (event) => {
 });
 
 
-sendButton.addEventListener('click', ()=>{
+
+
+ }
+ sendButton.addEventListener('click', ()=>{
     const message = messageBox.value;
     console.log(dataChannel);
     if (!dataChannel || dataChannel.readyState !== "open") {
@@ -178,8 +254,6 @@ sendButton.addEventListener('click', ()=>{
     }
     dataChannel.send(messageBox.value);
 });
-
- }
 
 attachFile.addEventListener('change',(event)=>{
     isSender=true;
