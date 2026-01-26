@@ -28,7 +28,7 @@ app.get('/',(req,res)=>{
 });
 
 io.on('connection',(socket)=>{
-    console.log('a user entered the connection',socket.id);
+    console.log('a user entered the connection',socket.id);     
     socket.on('disconnect',()=>{
         console.log('user disconnnected',socket.id);
     })
