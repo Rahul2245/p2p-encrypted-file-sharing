@@ -37,7 +37,7 @@
   <script type="module">
 
  
- const socket = io("https://192.168.41.58:9000");
+ const socket = io("https://10.122.14.12:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
@@ -65,6 +65,7 @@ let RSA_KEY_PAIR = null;
 let FILECHUNK_ENCRYPTION_KEY = null;
 let REMOTE_RSA_PUBLIC_KEY = null;
 let pendingIV = null;
+let encrytionReady = false;
 
 
 
@@ -134,7 +135,7 @@ async function exportAESKey(AESkey) {
 
 //encrypt AESkey
 async function encryptAESKey(RSAPublicKey,AESKey){
-    const rawKey = exportAESKey(AESKey);
+    const rawKey = await exportAESKey(AESKey);
     const encryptedKey = await crypto.subtle.encrypt(
         {name : "RSA-OAEP"},
         RSAPublicKey,
@@ -195,6 +196,8 @@ async function decryptChunk(iv,encryptedChunk){
         encryptedChunk
     );
 
+    return decryptedChunk;
+
 }
 
 
@@ -247,14 +250,14 @@ dataChannel.addEventListener('open', async (event)=>{
             key: Array.from(new Uint8Array(publicKeyBuffer))
          }));
        }
-       if (isSender && selectedFile && peerConnection.connectionState === 'connected') {
-            console.log('Sending file now...');
-            const chunks  = filechunking(selectedFile,fileChunkSize);
-            const header = fileMetaGeneration(selectedFile,chunks.length);
-            dataChannel.send(JSON.stringify(header));
+    //    if (isSender && selectedFile && peerConnection.connectionState === 'connected' && encrytionReady) {
+    //         console.log('Sending file now...');
+    //         const chunks  = filechunking(selectedFile,fileChunkSize);
+    //         const header = fileMetaGeneration(selectedFile,chunks.length);
+    //         dataChannel.send(JSON.stringify(header));
 
-            sendDataChunks(dataChannel, chunks);
-        }
+    //         sendDataChunks(dataChannel, chunks);
+    //     }
 
         
 
@@ -299,15 +302,26 @@ dataChannel.addEventListener('message', async (event) => {
             key : Array.from(new Uint8Array(EncryptedAES))
         }));
 
-        console.log("RSA public key received ,imported");
+        encrytionReady = true;
+        console.log("RSA public key received. AES key sent. Starting transfer...");
+
+        if (isSender && selectedFile) {
+            const chunks = filechunking(selectedFile, fileChunkSize);
+            const header = fileMetaGeneration(selectedFile, chunks.length);
+            dataChannel.send(JSON.stringify(header));
+            sendDataChunks(dataChannel, chunks);
+        }
         return;
     }
 
     if(msg.type === "encrypted-aes-key"){
         const encryptedKey = new Uint8Array(msg.key).buffer;
         FILECHUNK_ENCRYPTION_KEY = await decryptAESKey(encryptedKey,RSA_KEY_PAIR.privateKey);
-
+        
+        encrytionReady = true;
         console.log("AES session key decrypted & ready");
+
+       
     return;
     }
 
@@ -330,7 +344,8 @@ dataChannel.addEventListener('message', async (event) => {
       return;
     }
 
-    const decryptedChunk = await decryptChunk(event.data,pendingIV);
+
+const decryptedChunk = await decryptChunk(pendingIV, event.data);
 
 
     receivedChunks[expectedChunkIndex] = decryptedChunk;
