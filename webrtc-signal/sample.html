@@ -64,6 +64,7 @@ let expectedChunkIndex = null;
 let RSA_KEY_PAIR = null;
 let FILECHUNK_ENCRYPTION_KEY = null;
 let REMOTE_RSA_PUBLIC_KEY = null;
+let pendingIV = null;
 
 
 
@@ -197,7 +198,7 @@ async function decryptChunk(iv,encryptedChunk){
 }
 
 
-
+ 
 socket.on('connect', ()=>{
     console.log('connected to server:',socket.id);
     if(roomId){
@@ -310,6 +311,11 @@ dataChannel.addEventListener('message', async (event) => {
     return;
     }
 
+    if(msg.type === "file-chunk-iv"){
+        pendingIV = new Uint8Array(msg.iv);
+        return;
+    }
+
     // normal chat message
     const p = document.createElement('p');
     p.textContent = msg;
@@ -319,12 +325,17 @@ dataChannel.addEventListener('message', async (event) => {
 
   
   if (event.data instanceof ArrayBuffer) {
-    if (expectedChunkIndex === null) {
-      console.error("Binary arrived without metadata");
+    if (!pendingIV||expectedChunkIndex === null) {
+      console.error("missing index or iv");
       return;
     }
 
-    receivedChunks[expectedChunkIndex] = event.data;
+    const decryptedChunk = await decryptChunk(event.data,pendingIV);
+
+
+    receivedChunks[expectedChunkIndex] = decryptedChunk;
+
+    pendingIV = null;
     receivedChunkCount++;
     expectedChunkIndex = null;
 
@@ -524,8 +535,14 @@ async function sendDataChunks(dataChannel, chunks) {
 
         
        try {
-            const buffer = await chunkObj.chunk.arrayBuffer();
-            dataChannel.send(buffer);
+            const raw = await chunkObj.chunk.arrayBuffer();
+            const {iv,encryptedChunk} = await encryptChunk(raw);
+
+            dataChannel.send(JSON.stringify({
+                type : "file-chunk-iv",
+                iv: Array.from(iv)
+            }))
+            dataChannel.send(encryptedChunk);
         } catch (err) {
             console.error("Error reading chunk:", err);
             return;
