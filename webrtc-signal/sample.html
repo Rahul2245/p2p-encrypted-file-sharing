@@ -37,7 +37,7 @@
   <script type="module">
 
  
- const socket = io("https://127.0.0.1:9000");
+ const socket = io("https://192.168.41.58:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
@@ -124,6 +124,45 @@ async function SymmetricKeyGenerate(){
       return aesKey;
 }
 
+//export aeskey
+async function exportAESKey(AESkey) {
+    const key = await crypto.subtle.exportKey("raw",AESkey);
+    return key;
+    
+}
+
+//encrypt AESkey
+async function encryptAESKey(RSAPublicKey,AESKey){
+    const rawKey = exportAESKey(AESKey);
+    const encryptedKey = await crypto.subtle.encrypt(
+        {name : "RSA-OAEP"},
+        RSAPublicKey,
+        rawKey
+
+    );
+return encryptedKey;
+
+}
+
+//decrypt AESkey
+async function decryptAESKey(encryptedKey, RSAPrivateKey){
+    const raw = await crypto.subtle.decrypt(
+        {name : "RSA-OAEP"},
+        RSAPrivateKey,
+        encryptedKey
+    );
+
+    return await crypto.subtle.importKey(
+        "raw",
+         raw,
+        { name: "AES-GCM" },
+        true,
+        ["encrypt", "decrypt"]
+    )
+}
+
+
+
 
 socket.on('connect', ()=>{
     console.log('connected to server:',socket.id);
@@ -164,6 +203,8 @@ dataChannel.addEventListener('open', async (event)=>{
     sendButton.disabled = false;
     dataChannel.bufferedAmountLowThreshold = bufferedAmountLowThreshold;
        if(!isSender){
+        await generateRSAKeyPair();
+
          const publicKeyBuffer = await exportRSAPublicKey(RSA_KEY_PAIR.publicKey);
 
          dataChannel.send(JSON.stringify({
@@ -201,6 +242,9 @@ dataChannel.addEventListener('message', async (event) => {
       receivedChunks = new Array(msg.totalChunks);
       receivedChunkCount = 0;
       console.log("file header received", incomingFileMeta);
+      
+
+
 
      
       return;
@@ -213,8 +257,23 @@ dataChannel.addEventListener('message', async (event) => {
 
     if(msg.type === "rsa-public-key"){
         REMOTE_RSA_PUBLIC_KEY = await importRSAPublicKey(msg.key);
+        const symmetricKey = await SymmetricKeyGenerate();
+        const EncryptedAES = await encryptAESKey(REMOTE_RSA_PUBLIC_KEY,symmetricKey);
+        dataChannel.send(JSON.stringify({
+            type : "encrypted-aes-key",
+            key : Array.from(new Uint8Array(EncryptedAES))
+        }));
+
         console.log("RSA public key received ,imported");
         return;
+    }
+
+    if(msg.type === "encrypted-aes-key"){
+        const encryptedKey = new Uint8Array(msg.key).buffer;
+        FILECHUNK_ENCRYPTION_KEY = await decryptAESKey(encryptedKey,RSA_KEY_PAIR.privateKey);
+
+        console.log("AES session key decrypted & ready");
+    return;
     }
 
     // normal chat message
@@ -406,9 +465,7 @@ function fileMetaGeneration(selectedFile,totalChunks){
 //sending data chunks
 async function sendDataChunks(dataChannel, chunks) {
     let index = 0;
-
     dataChannel.bufferedAmountLowThreshold = bufferedAmountLowThreshold;
-
     while (index < chunks.length) {
 
        
