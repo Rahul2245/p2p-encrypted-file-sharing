@@ -37,7 +37,7 @@
   <script type="module">
 
  
- const socket = io("https://127.0.0.1:9000");
+ const socket = io("https://10.122.14.12:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
@@ -64,6 +64,8 @@ let expectedChunkIndex = null;
 let RSA_KEY_PAIR = null;
 let FILECHUNK_ENCRYPTION_KEY = null;
 let REMOTE_RSA_PUBLIC_KEY = null;
+let pendingIV = null;
+let encrytionReady = false;
 
 
 
@@ -124,7 +126,82 @@ async function SymmetricKeyGenerate(){
       return aesKey;
 }
 
+//export aeskey
+async function exportAESKey(AESkey) {
+    const key = await crypto.subtle.exportKey("raw",AESkey);
+    return key;
+    
+}
 
+//encrypt AESkey
+async function encryptAESKey(RSAPublicKey,AESKey){
+    const rawKey = await exportAESKey(AESKey);
+    const encryptedKey = await crypto.subtle.encrypt(
+        {name : "RSA-OAEP"},
+        RSAPublicKey,
+        rawKey
+
+    );
+return encryptedKey;
+
+}
+
+//decrypt AESkey
+async function decryptAESKey(encryptedKey, RSAPrivateKey){
+    const raw = await crypto.subtle.decrypt(
+        {name : "RSA-OAEP"},
+        RSAPrivateKey,
+        encryptedKey
+    );
+
+    return await crypto.subtle.importKey(
+        "raw",
+         raw,
+        { name: "AES-GCM" },
+        true,
+        ["encrypt", "decrypt"]
+    )
+}
+
+//encrypt chunk
+async function encryptChunk(buffer){
+    
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const encryptedChunk = await crypto.subtle.encrypt(
+        {
+            name : "AES-GCM",
+            iv
+        }
+        ,
+        FILECHUNK_ENCRYPTION_KEY,
+        buffer
+    );
+
+    return {
+        iv,
+        encryptedChunk
+    };
+
+};
+
+//decrypt chunk
+async function decryptChunk(iv,encryptedChunk){
+    const decryptedChunk = await crypto.subtle.decrypt(
+        {
+            name : "AES-GCM",
+            iv
+        },
+        FILECHUNK_ENCRYPTION_KEY,
+        encryptedChunk
+    );
+
+    return decryptedChunk;
+
+}
+
+
+ 
 socket.on('connect', ()=>{
     console.log('connected to server:',socket.id);
     if(roomId){
@@ -164,6 +241,8 @@ dataChannel.addEventListener('open', async (event)=>{
     sendButton.disabled = false;
     dataChannel.bufferedAmountLowThreshold = bufferedAmountLowThreshold;
        if(!isSender){
+        await generateRSAKeyPair();
+
          const publicKeyBuffer = await exportRSAPublicKey(RSA_KEY_PAIR.publicKey);
 
          dataChannel.send(JSON.stringify({
@@ -171,14 +250,14 @@ dataChannel.addEventListener('open', async (event)=>{
             key: Array.from(new Uint8Array(publicKeyBuffer))
          }));
        }
-       if (isSender && selectedFile && peerConnection.connectionState === 'connected') {
-            console.log('Sending file now...');
-            const chunks  = filechunking(selectedFile,fileChunkSize);
-            const header = fileMetaGeneration(selectedFile,chunks.length);
-            dataChannel.send(JSON.stringify(header));
+    //    if (isSender && selectedFile && peerConnection.connectionState === 'connected' && encrytionReady) {
+    //         console.log('Sending file now...');
+    //         const chunks  = filechunking(selectedFile,fileChunkSize);
+    //         const header = fileMetaGeneration(selectedFile,chunks.length);
+    //         dataChannel.send(JSON.stringify(header));
 
-            sendDataChunks(dataChannel, chunks);
-        }
+    //         sendDataChunks(dataChannel, chunks);
+    //     }
 
         
 
@@ -201,6 +280,9 @@ dataChannel.addEventListener('message', async (event) => {
       receivedChunks = new Array(msg.totalChunks);
       receivedChunkCount = 0;
       console.log("file header received", incomingFileMeta);
+      
+
+
 
      
       return;
@@ -213,7 +295,38 @@ dataChannel.addEventListener('message', async (event) => {
 
     if(msg.type === "rsa-public-key"){
         REMOTE_RSA_PUBLIC_KEY = await importRSAPublicKey(msg.key);
-        console.log("RSA public key received ,imported");
+        const symmetricKey = await SymmetricKeyGenerate();
+        const EncryptedAES = await encryptAESKey(REMOTE_RSA_PUBLIC_KEY,symmetricKey);
+        dataChannel.send(JSON.stringify({
+            type : "encrypted-aes-key",
+            key : Array.from(new Uint8Array(EncryptedAES))
+        }));
+
+        encrytionReady = true;
+        console.log("RSA public key received. AES key sent. Starting transfer...");
+
+        if (isSender && selectedFile) {
+            const chunks = filechunking(selectedFile, fileChunkSize);
+            const header = fileMetaGeneration(selectedFile, chunks.length);
+            dataChannel.send(JSON.stringify(header));
+            sendDataChunks(dataChannel, chunks);
+        }
+        return;
+    }
+
+    if(msg.type === "encrypted-aes-key"){
+        const encryptedKey = new Uint8Array(msg.key).buffer;
+        FILECHUNK_ENCRYPTION_KEY = await decryptAESKey(encryptedKey,RSA_KEY_PAIR.privateKey);
+        
+        encrytionReady = true;
+        console.log("AES session key decrypted & ready");
+
+       
+    return;
+    }
+
+    if(msg.type === "file-chunk-iv"){
+        pendingIV = new Uint8Array(msg.iv);
         return;
     }
 
@@ -226,12 +339,18 @@ dataChannel.addEventListener('message', async (event) => {
 
   
   if (event.data instanceof ArrayBuffer) {
-    if (expectedChunkIndex === null) {
-      console.error("Binary arrived without metadata");
+    if (!pendingIV||expectedChunkIndex === null) {
+      console.error("missing index or iv");
       return;
     }
 
-    receivedChunks[expectedChunkIndex] = event.data;
+
+const decryptedChunk = await decryptChunk(pendingIV, event.data);
+
+
+    receivedChunks[expectedChunkIndex] = decryptedChunk;
+
+    pendingIV = null;
     receivedChunkCount++;
     expectedChunkIndex = null;
 
@@ -406,9 +525,7 @@ function fileMetaGeneration(selectedFile,totalChunks){
 //sending data chunks
 async function sendDataChunks(dataChannel, chunks) {
     let index = 0;
-
     dataChannel.bufferedAmountLowThreshold = bufferedAmountLowThreshold;
-
     while (index < chunks.length) {
 
        
@@ -433,8 +550,14 @@ async function sendDataChunks(dataChannel, chunks) {
 
         
        try {
-            const buffer = await chunkObj.chunk.arrayBuffer();
-            dataChannel.send(buffer);
+            const raw = await chunkObj.chunk.arrayBuffer();
+            const {iv,encryptedChunk} = await encryptChunk(raw);
+
+            dataChannel.send(JSON.stringify({
+                type : "file-chunk-iv",
+                iv: Array.from(iv)
+            }))
+            dataChannel.send(encryptedChunk);
         } catch (err) {
             console.error("Error reading chunk:", err);
             return;
