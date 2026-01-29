@@ -161,6 +161,40 @@ async function decryptAESKey(encryptedKey, RSAPrivateKey){
     )
 }
 
+//encrypt chunk
+async function encryptChunk(buffer){
+    
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const encryptedChunk = await crypto.subtle.encrypt(
+        {
+            name : "AES-GCM",
+            iv
+        }
+        ,
+        FILECHUNK_ENCRYPTION_KEY,
+        buffer
+    );
+
+    return {
+        iv,
+        encryptedChunk
+    };
+
+};
+
+//decrypt chunk
+async function decryptChunk(iv,encryptedChunk){
+    const decryptedChunk = await crypto.subtle.decrypt(
+        {
+            name : "AES-GCM",
+            iv
+        },
+        FILECHUNK_ENCRYPTION_KEY,
+        encryptedChunk
+    );
+
+}
 
 
 
