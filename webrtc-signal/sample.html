@@ -37,7 +37,7 @@
   <script type="module">
 
  
- const socket = io("https://10.122.14.12:9000");
+ const socket = io("https://10.126.0.181:9000");
 //  , {key : readFileSync('./cert/cert.key'),
 // cert : readFileSync('./cert/cert.crt')});
 
@@ -200,6 +200,33 @@ async function decryptChunk(iv,encryptedChunk){
 
 }
 
+//generate file hash sha-256 algo
+async function generateSHA256FileHash(inputFile){
+
+    const buffer = await inputFile.arrayBuffer();
+    
+    const hashBuffer = await crypto.subtle.digest('SHA-256',buffer);
+
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');         
+
+    return hashHex;
+
+}
+
+//check the file hash on receiver side
+async function checkFileHash(IncomingFileHash, CalculatedFileHash){
+    if(!IncomingFileHash||!CalculatedFileHash){
+        console.log("hash is missing");
+        return;
+    }
+    if(IncomingFileHash === CalculatedFileHash){
+        return true;
+    }else{
+        return false;
+    }
+}
+
 
  
 socket.on('connect', ()=>{
@@ -211,7 +238,16 @@ socket.on('connect', ()=>{
     
 });
 
-const configuration = {'iceServers' : [{'urls':'stun:stun.l.google.com:19302'}]};
+const configuration = {'iceServers' : [
+    // {urls:'stun:stun.l.google.com:19302'},
+    // {
+    //     urls: 'turn:your-turn-server:3478',
+    //     username : 'user',
+    //     Credential : 'pass'
+        
+    // }
+]
+};
 const peerConnection = new RTCPeerConnection(configuration);
 let dataChannel;
 
@@ -250,14 +286,7 @@ dataChannel.addEventListener('open', async (event)=>{
             key: Array.from(new Uint8Array(publicKeyBuffer))
          }));
        }
-    //    if (isSender && selectedFile && peerConnection.connectionState === 'connected' && encrytionReady) {
-    //         console.log('Sending file now...');
-    //         const chunks  = filechunking(selectedFile,fileChunkSize);
-    //         const header = fileMetaGeneration(selectedFile,chunks.length);
-    //         dataChannel.send(JSON.stringify(header));
-
-    //         sendDataChunks(dataChannel, chunks);
-    //     }
+ 
 
         
 
@@ -281,10 +310,6 @@ dataChannel.addEventListener('message', async (event) => {
       receivedChunkCount = 0;
       console.log("file header received", incomingFileMeta);
       
-
-
-
-     
       return;
     }
 
@@ -292,6 +317,7 @@ dataChannel.addEventListener('message', async (event) => {
       expectedChunkIndex = msg.index;
       return;
     }
+
 
     if(msg.type === "rsa-public-key"){
         REMOTE_RSA_PUBLIC_KEY = await importRSAPublicKey(msg.key);
@@ -307,7 +333,7 @@ dataChannel.addEventListener('message', async (event) => {
 
         if (isSender && selectedFile) {
             const chunks = filechunking(selectedFile, fileChunkSize);
-            const header = fileMetaGeneration(selectedFile, chunks.length);
+            const header = await fileMetaGeneration(selectedFile, chunks.length);
             dataChannel.send(JSON.stringify(header));
             sendDataChunks(dataChannel, chunks);
         }
@@ -320,8 +346,6 @@ dataChannel.addEventListener('message', async (event) => {
         
         encrytionReady = true;
         console.log("AES session key decrypted & ready");
-
-       
     return;
     }
 
@@ -354,9 +378,10 @@ const decryptedChunk = await decryptChunk(pendingIV, event.data);
     receivedChunkCount++;
     expectedChunkIndex = null;
 
-    if (receivedChunkCount === incomingFileMeta.totalChunks) {
-      assembleAndDownload();
-    }
+   if (incomingFileMeta && receivedChunkCount === incomingFileMeta.totalChunks) {
+    assembleAndDownload();
+}
+
   }
 });
 
@@ -501,11 +526,12 @@ function filechunking(selectedFile,fileChunkSize){
      return chunks;
 }
     //file meta data generation
-function fileMetaGeneration(selectedFile,totalChunks){
+async function fileMetaGeneration(selectedFile,totalChunks){
     if(!selectedFile){
         return;
     }
     const file = selectedFile.file;
+    const fileHash = await generateSHA256FileHash(file);
 
     return({
         type : "file-Header",
@@ -514,7 +540,8 @@ function fileMetaGeneration(selectedFile,totalChunks){
         fileType: file.type,
         totalChunks : totalChunks,
         fileChunkSize : fileChunkSize,
-        fileId:selectedFile.fileId
+        fileId:selectedFile.fileId,
+        fileHash : fileHash
 
 
     });
@@ -573,7 +600,7 @@ async function sendDataChunks(dataChannel, chunks) {
 
 
 // assembling the chunks
-function assembleAndDownload(){
+async function assembleAndDownload(){
     for (let i = 0; i < incomingFileMeta.totalChunks; i++) {
         if (!receivedChunks[i]) {
             console.error(`File corrupted: Missing chunk index ${i}`);
@@ -589,6 +616,15 @@ function assembleAndDownload(){
         alert("File corrupted: Size mismatch.");
         return;
     }
+     
+    const IncomingFileHash = incomingFileMeta.fileHash;
+        const CalculatedFileHash = await generateSHA256FileHash(blob);
+
+        const isValid = await checkFileHash(IncomingFileHash, CalculatedFileHash); // FIX: added await
+if(!isValid){
+    console.log("file got corrupted, hash mismatch");
+    return;
+}
     console.log("File assembled successfully. Size:", blob.size);
     const url = URL.createObjectURL(blob);
 
