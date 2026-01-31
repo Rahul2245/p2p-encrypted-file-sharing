@@ -1,7 +1,11 @@
 import "./upload.css";
-import { useState } from "react";
+import { useState,useEffect} from "react";
+import {QRCodeCanvas} from "qrcode.react";
+import {io} from "socket.io-client";
+
 
 const Upload = () => {
+
   const [fileName, setFileName] = useState("");
 
   const handleFileChange = (e) => {
@@ -10,6 +14,37 @@ const Upload = () => {
       setFileName(file.name);
     }
   };
+
+  const [socket,setSocket]=useState(null);
+
+  useEffect(() => {
+    const s=io("https://127.0.0.1:9000");
+    setSocket(s);
+    return () => s.disconnect();
+  },[]);
+
+  
+
+const [roomId,setRoomId]=useState("");
+
+useEffect(() => {
+  if(!socket)return;
+  socket.on("link-created", ({roomId}) => {
+    setRoomId(roomId);
+  });
+   return () => socket.off("link-created");
+},[socket]);
+
+ useEffect(() => {
+    if(!socket||!fileName)return;
+    socket.emit("create-link");
+  },[socket,fileName]);
+
+const shareLink = roomId
+  ? `${window.location.origin}/receive/${roomId}`
+  : "";
+
+
 
   return (
     <main className="upload-page">
@@ -45,6 +80,14 @@ const Upload = () => {
           <p className="upload-hint">
             Upload the files that you want to send/share
           </p>
+
+          {shareLink && (
+            <div className="qr-section">
+              <QRCodeCanvas value={shareLink} size={180} />
+              <p>{shareLink}</p>
+            </div>
+          )}
+
         </div>
 
         {/* RIGHT SIDE */}
