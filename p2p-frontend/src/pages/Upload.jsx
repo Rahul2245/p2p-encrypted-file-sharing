@@ -18,7 +18,7 @@ const Upload = () => {
   const [socket,setSocket]=useState(null);
 
   useEffect(() => {
-    const s=io("https://127.0.0.1:9000");
+    const s=io("http://localhost:9000");
     setSocket(s);
     return () => s.disconnect();
   },[]);

@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs'
-import { createServer } from 'https'
+import { createServer } from 'http'
 import express from 'express'
 import { Server } from 'socket.io'
 import { dirname,join } from "node:path";
@@ -20,7 +20,12 @@ const secureExpressServer = createServer({key,cert
     //     readFileSync('./cert/ca.crt')
     // ]
 },app)
-const io = new Server(secureExpressServer);
+const io = new Server(secureExpressServer,{
+    cors: {
+    origin: "*",   // allow frontend
+    methods: ["GET", "POST"]
+  }
+});
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 app.get('/',(req,res)=>{
