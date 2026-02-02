@@ -1,0 +1,148 @@
+:root {
+  --bg-dark: #050505;        /* Pitch Black */
+  --bg-spotlight: #0f0f0f;   /* Slightly lighter for gradient */
+  --brand-gold: #fbbf24;     /* Your Brand Gold */
+  --text-white: #ffffff;
+  --text-grey: #6b7280;
+}
+
+body { margin: 0; padding: 0; }
+
+.minimal-error-page {
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-dark);
+  /* A very subtle spotlight effect in the center */
+  background-image: radial-gradient(circle at center, var(--bg-spotlight) 0%, var(--bg-dark) 60%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.content-wrapper {
+  text-align: center;
+  z-index: 10;
+}
+
+/* --- THE CREATIVE RADAR 404 --- */
+.radar-404 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  font-size: 10rem;
+  font-weight: 200; /* Thin, elegant font weight */
+  color: var(--text-white);
+  line-height: 1;
+  margin-bottom: 30px;
+  font-family: 'JetBrains Mono', monospace; /* Tech font */
+}
+
+/* The '0' container */
+.radar-zero {
+  width: 140px;
+  height: 140px;
+  border: 1px dashed rgba(251, 191, 36, 0.3); /* Dim gold dashed line */
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(0,0,0,0.5);
+}
+
+/* The scanning line inside the '0' */
+.radar-sweep {
+  width: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--brand-gold));
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: left center;
+  animation: radar-spin 3s infinite linear;
+}
+
+/* A small dot in the center */
+.radar-zero::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--brand-gold);
+  border-radius: 50%;
+  position: absolute;
+  z-index: 2;
+}
+
+/* --- TEXT --- */
+.minimal-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-white);
+  margin: 0 0 10px 0;
+  letter-spacing: -0.5px;
+}
+
+.minimal-desc {
+  color: var(--text-grey);
+  font-size: 1rem;
+  max-width: 400px;
+  margin: 0 auto 40px auto;
+  line-height: 1.5;
+}
+
+/* --- BUTTON --- */
+.gold-link-btn {
+  background: transparent;
+  border: none;
+  color: var(--brand-gold);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 10px 20px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.arrow {
+  transition: transform 0.3s ease;
+}
+
+.gold-link-btn:hover {
+  opacity: 0.8;
+  letter-spacing: 1px; /* Subtle expansion effect */
+}
+
+.gold-link-btn:hover .arrow {
+  transform: translateX(-5px);
+}
+
+/* --- WATERMARK --- */
+.watermark {
+  position: absolute;
+  bottom: 40px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-grey);
+  opacity: 0.2;
+  letter-spacing: 3px;
+}
+
+/* --- ANIMATION --- */
+@keyframes radar-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+  .radar-404 { font-size: 6rem; gap: 10px; }
+  .radar-zero { width: 80px; height: 80px; }
+}
