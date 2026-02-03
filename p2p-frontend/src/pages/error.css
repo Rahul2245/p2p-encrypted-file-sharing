@@ -145,4 +145,4 @@ body { margin: 0; padding: 0; }
 @media (max-width: 600px) {
   .radar-404 { font-size: 6rem; gap: 10px; }
   .radar-zero { width: 80px; height: 80px; }
-}
+} 
