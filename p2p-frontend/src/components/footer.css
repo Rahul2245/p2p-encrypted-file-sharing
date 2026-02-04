@@ -1,3 +1,7 @@
+/* =========================
+   FOOTER ROOT
+========================= */
+
 .footer {
   background-color: #18181B;
   border-top: 1px solid #3F3F46;
@@ -5,12 +9,20 @@
   color: #FAFAFA;
 }
 
+/* =========================
+   GRID LAYOUT
+========================= */
+
 .footer-container {
   display: grid;
   grid-template-columns: 1.5fr 1fr 1fr 1fr;
   gap: 40px;
   align-items: start;
 }
+
+/* =========================
+   BRAND
+========================= */
 
 .footer-brand {
   display: flex;
@@ -35,6 +47,10 @@
   color: #F59E0B;
 }
 
+/* =========================
+   COLUMN TITLES
+========================= */
+
 .footer-col h4 {
   color: #F59E0B;
   font-size: 18px;
@@ -42,22 +58,54 @@
   margin-bottom: 14px;
 }
 
+/* =========================
+   LIST RESET
+========================= */
+
 .footer-col ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .footer-col li {
-  font-size: 14px;
-  color: #A1A1AA;
   margin-bottom: 10px;
-  cursor: pointer;
-  transition: color 0.2s ease;
+  font-size: 14px;
 }
 
-.footer-col li:hover {
-  color: #FAFAFA;
+/* =========================
+   LINK STYLE (ALL LINKS)
+========================= */
+
+.footer-col li a {
+  color: #FFFFFF;
+  text-decoration: none;
+  transition: color 0.25s ease, transform 0.2s ease;
+  display: inline-block;
 }
+
+/* Hover Grey */
+
+.footer-col li a:hover {
+  color: #A1A1AA;
+  transform: translateX(3px);
+}
+
+/* Remove purple visited */
+
+.footer-col li a:visited {
+  color: #FFFFFF;
+}
+
+/* Active click */
+
+.footer-col li a:active {
+  color: #D4D4D8;
+}
+
+/* =========================
+   FOOTER BOTTOM
+========================= */
 
 .footer-bottom {
   margin-top: 50px;
@@ -66,8 +114,18 @@
   color: #A1A1AA;
 }
 
-/* Responsive */
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1024px) {
+  .footer {
+    padding: 50px 40px 25px;
+  }
+}
+
 @media (max-width: 768px) {
+
   .footer {
     padding: 40px 20px;
   }
@@ -80,4 +138,17 @@
   .footer-brand {
     grid-column: span 2;
   }
+}
+
+@media (max-width: 480px) {
+
+  .footer-container {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+
+  .footer-brand {
+    grid-column: span 1;
+  }
+
 }
