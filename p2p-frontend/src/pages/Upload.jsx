@@ -59,7 +59,7 @@ useEffect(() => {
     peerRef.current=pc;
 
     pc.onicecandidate = (event) =>{
-      if(event.candidate&&roomId){
+      if(event.candidate){
         socket.emit("new-ice-candidate",{
           candidate: event.candidate,
           roomId
