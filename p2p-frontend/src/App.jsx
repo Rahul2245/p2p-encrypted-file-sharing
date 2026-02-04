@@ -11,6 +11,7 @@ import Error from "./pages/Error";
 import HowItWorks from "./pages/HowItWorks";
 import AboutUs from "./pages/AboutUs";
 import Security from "./pages/Security";
+import FAQ from './pages/FAQ';
 
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
           <Route path="/how-it-works" element={<HowItWorks/>}/>
           <Route path="/aboutus" element={<AboutUs/>}/>
           <Route path="/security" element={<Security/>}/>
+          <Route path="/FAQ" element={<FAQ/>}/>
         </Route> t-works
           </Routes>
     </BR>
