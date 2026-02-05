@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
-import { createServer } from 'http'
+import https from 'https'
+
 import express from 'express'
 import { Server } from 'socket.io'
 import { dirname,join } from "node:path";
@@ -14,12 +15,18 @@ const app = express()
 const key = readFileSync('./cert/cert.key')
 const cert = readFileSync('./cert/cert.crt')    
 
-const secureExpressServer = createServer({key,cert
-    // requestCert :true,
-    // ca:[
-    //     readFileSync('./cert/ca.crt')
-    // ]
+const secureExpressServer = https.createServer({
+  key,
+  cert
 },app)
+
+
+// const secureExpressServer = createServer({key,cert
+//     // requestCert :true,
+//     // ca:[
+//     //     readFileSync('./cert/ca.crt')
+//     // ]
+// },app)
 const io = new Server(secureExpressServer,{
     cors: {
     origin: "*",   // allow frontend

@@ -1,159 +1,161 @@
 import "./upload.css";
-import { useState,useEffect,useRef} from "react";
-import {QRCodeCanvas} from "qrcode.react";
-import {io} from "socket.io-client";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { QRCodeCanvas } from "qrcode.react";
+import { io } from "socket.io-client";
 import { CopyIcon, CheckIcon } from "@primer/octicons-react";
 
-
 const Upload = () => {
+  const peerRef = useRef(null);
+  const dataChannelRef = useRef(null);
+  const selectedFileRef = useRef(null);
+  const roomIdRef = useRef("");
 
-  const peerRef=useRef(null);
-  const dataChannelRef=useRef(null);
-  const selectedFileRef=useRef(null);
-
-  const [copied,setCopied]=useState(false);
-
+  const [copied, setCopied] = useState(false);
   const [fileName, setFileName] = useState("");
   const [fileSize, setFileSize] = useState(null);
+  const [socket, setSocket] = useState(null);
+  const [roomId, setRoomId] = useState("");
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setFileName(file.name);
       setFileSize(file.size);
-
-      // ✅ NEW (for WebRTC)
-    selectedFileRef.current = file;
+      selectedFileRef.current = file;
     }
   };
 
-  
   const formatFileSize = (bytes) => {
-     if(!bytes) return "";
-     const sizes=["B","KB","MB","GB"];
-     const i=Math.floor(Math.log(bytes)/Math.log(1024));
-     return `${(bytes/Math.pow(1024,i)).toFixed(2)} ${sizes[i]}`;
-  }
+    if (!bytes) return "";
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+  };
 
-  const [socket,setSocket]=useState(null);
-
-  useEffect(() => {
-    const s=io("http://localhost:9000");
-    setSocket(s);
-    return () => s.disconnect();
-  },[]);
-
-  
-
-const [roomId,setRoomId]=useState("");
-
-useEffect(() => {
-    if(!socket) return;
-
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        {urls: "stun:stun.l.google.com:19302"}
-      ]
-    });
-
-    peerRef.current=pc;
-
-    pc.onicecandidate = (event) =>{
-      if(event.candidate){
-        socket.emit("new-ice-candidate",{
-          candidate: event.candidate,
-          roomId
-        });
-
-        }
-      };
-
-       pc.onconnectionstatechange = () => {
-          console.log("Connection:", pc.connectionState);
-    };
-
-    return () => pc.close();
-  },[socket]);
-
-useEffect(() => {
-  if(!socket)return;
-  socket.on("link-created",async ({roomId}) => {
-    setRoomId(roomId);
-
-    const pc=peerRef.current;
-
-    const dc=pc.createDataChannel("file");
-    dataChannelRef.current=dc;
-
-    dc.binaryType="arraybuffer";
-    dc.onopen =() => {
-      console.log("datachannel open (sender)");
-      setTimeout(sendFile,300);
-    };
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-
-    socket.emit("offer",{offer,roomId});
-  });
-
-   return () => socket.off("link-created");
-},[socket]);
-
- useEffect(() => {
-    if(!socket||!fileName)return;
-    socket.emit("create-link");
-  },[socket,fileName]);
-
-const shareLink = roomId
-  ? `${window.location.origin}/receive/${roomId}`
-  : "";
-
-  useEffect(() => {
-    if(!socket)return;
-
-    socket.on("answer", async ({answer}) =>{
-      await peerRef.current.setRemoteDescription(answer);
-    });
-
-    socket.on("new-ice-candidate", async ({candidate}) => {
-      if(candidate){
-        await peerRef.current.addIceCandidate(candidate);
-      }
-    });
-
-    return () => {
-      socket.off("answer");
-      socket.off("new-ice-candidate");
-    }
-  },[socket]);
-
-  const sendFile = async () => {
+  const sendFile = useCallback(async () => {
     const file = selectedFileRef.current;
     const dc = dataChannelRef.current;
+    if (!file || !dc) return;
 
-    if(!file||!dc)return;
+    const chunkSize = 16 * 1024;
+    const totalChunks = Math.ceil(file.size / chunkSize);
 
-    const chunkSize = 16*1024;
-    let offset=0;
+    dc.send(
+      JSON.stringify({
+        type: "file-header",
+        fileName: file.name,
+        fileSize: file.size,
+        totalChunks,
+        chunkSize,
+      })
+    );
 
-    dc.send(JSON.stringify({
-      type: "meta",
-      name: file.name,
-      size: file.size
-    }));
+    let offset = 0;
+    let index = 0;
 
-    while(offset < file.size){
-      const slice = file.slice(offset,offset+chunkSize);
-      const buffer=await slice.arrayBuffer();
+    while (offset < file.size) {
+      if (dc.bufferedAmount > 1024 * 1024) {
+        await new Promise((resolve) => {
+          const handler = () => {
+            dc.removeEventListener("bufferedamountlow", handler);
+            resolve();
+          };
+          dc.addEventListener("bufferedamountlow", handler);
+        });
+      }
+
+      const slice = file.slice(offset, offset + chunkSize);
+      const buffer = await slice.arrayBuffer();
+
+      dc.send(
+        JSON.stringify({
+          type: "file-chunk-meta",
+          index,
+        })
+      );
+
       dc.send(buffer);
-      offset=offset+chunkSize;
+
+      offset += chunkSize;
+      index++;
     }
+  }, []);
 
-    dc.send(JSON.stringify({type:"done"}));
-    console.log("file sent");
-  }
+  useEffect(() => {
+    const s = io("https://localhost:9000");
+    setSocket(s);
+    return () => s.disconnect();
+  }, []);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    });
+    peerRef.current = pc;
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate && roomIdRef.current) {
+        socket.emit("new-ice-candidate", {
+          candidate: event.candidate,
+          roomId: roomIdRef.current,
+        });
+      }
+    };
+
+    const handleLinkCreated = async ({ roomId }) => {
+      setRoomId(roomId);
+      roomIdRef.current = roomId;
+    };
+
+    const handleInitiator = async ({ roomId }) => {
+      const dc = pc.createDataChannel("file");
+      dc.bufferedAmountLowThreshold = 512 * 1024;
+      dataChannelRef.current = dc;
+      dc.binaryType = "arraybuffer";
+
+      dc.onopen = () => {
+        setTimeout(sendFile, 300);
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      socket.emit("offer", {
+        offer,
+        roomId,
+      });
+    };
+
+    const handleAnswer = async ({ answer }) => {
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    };
+
+    const handleNewIce = async ({ candidate }) => {
+      if (candidate) await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    };
+
+    socket.on("link-created", handleLinkCreated);
+    socket.on("initiator", handleInitiator);
+    socket.on("answer", handleAnswer);
+    socket.on("new-ice-candidate", handleNewIce);
+
+    return () => {
+      pc.close();
+      socket.off("link-created");
+      socket.off("initiator");
+      socket.off("answer");
+      socket.off("new-ice-candidate");
+    };
+  }, [socket, sendFile]);
+
+  useEffect(() => {
+    if (!socket || !fileName) return;
+    socket.emit("create-link");
+  }, [socket, fileName]);
+
+  const shareLink = roomId ? `${window.location.origin}/receive/${roomId}` : "";
 
   return (
     <main className="upload-page">
