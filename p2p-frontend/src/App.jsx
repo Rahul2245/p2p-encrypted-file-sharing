@@ -21,7 +21,7 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Home/>}/>     
           <Route path="/sharelink" element={<ShareLink/>}/>
-          <Route path="/receive/:roomId" element={<Receive/>}/> 
+          <Route path="/receive" element={<Receive/>}/> 
           <Route path="/upload" element={<Upload/>}/> 
           <Route path="/complete" element={<Complete/>}/> 
           <Route path="/error" element={<Error/>}/>
