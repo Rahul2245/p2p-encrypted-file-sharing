@@ -22,7 +22,7 @@ const Footer = () => {
           <ul>
             <li><Link to="/upload">Send file</Link></li>
             <li><Link to="/receive">Receive</Link></li>
-            <li><Link to="/howitworks">How it works</Link></li>
+            <li><Link to="/how-it-works">How it works</Link></li>
           </ul>
         </div>
 

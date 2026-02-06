@@ -100,7 +100,8 @@ io.on('connection',(socket)=>{
 
 
 
-secureExpressServer.listen(9000,()=>{
+secureExpressServer.listen(9000, "0.0.0.0", ()=>{
     console.log("server running on port 9000");
-})
+});
+
 

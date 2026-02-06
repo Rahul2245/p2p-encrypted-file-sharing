@@ -1,11 +1,11 @@
 /* ---------- VARIABLES ---------- */
 :root {
-  --bg: #18181B;           /* Dark Coffee */
-  --primary: #F59E0B;      /* Amber Orange */
-  --primary-hover: #D97706;/* Deep Amber */
-  --text: #FAFAFA;         /* Soft White */
-  --muted: #A1A1AA;        /* Gray */
-  --border: #3F3F46;       /* Warm Gray */
+  --bg: #18181B;       /* Dark Coffee */
+  --primary: #F59E0B;  /* Amber Orange */
+  --primary-hover: #D97706;
+  --text: #FAFAFA;     /* Soft White */
+  --muted: #A1A1AA;    /* Gray */
+  --border: #3F3F46;   /* Warm Gray */
 }
 
 /* ---------- RESET ---------- */
@@ -16,77 +16,86 @@
   font-family: "Inter", sans-serif;
 }
 
-/* ---------- HEADER ---------- */
+/* ---------- HEADER CONTAINER ---------- */
 .header {
   width: 100%;
   background-color: var(--bg);
-  padding: 24px 80px;
+  height: 80px;
   display: flex;
-  justify-content: center; /* center inner container */
+  justify-content: center;
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
+  padding: 0 24px;
 }
 
 .header-inner {
   width: 100%;
   max-width: 1280px;
+  height: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-/* ---------- BRAND ---------- */
+/* ---------- BRAND LOGO (Always Visible) ---------- */
 .brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  text-decoration: none;
+  user-select: none;
+  z-index: 1002; /* Ensure logo sits above mobile menu if needed */
 }
 
 .logo {
-  height: 48px;
+  height: 42px;
   width: auto;
 }
 
 .brand-text {
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
 .brand-name {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: 0.3px;
+  letter-spacing: -0.02em;
   color: var(--text);
+  line-height: 1;
+  white-space: nowrap; /* Prevent wrapping */
 }
 
 .brand-accent {
   color: var(--primary);
-  letter-spacing: 0.3px;
 }
 
 .brand-tagline {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: 4px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
 }
 
-/* ---------- NAVIGATION ---------- */
+/* ---------- NAVIGATION (Desktop Default) ---------- */
 .nav {
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: 32px;
 }
 
 .nav a {
   color: var(--text);
   text-decoration: none;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 500;
-  transition: color 0.2s ease, border-bottom 0.2s ease;
-  padding-bottom: 2px;
+  transition: color 0.2s ease;
   position: relative;
+  padding: 8px 0;
 }
 
 .nav a:hover {
@@ -98,37 +107,129 @@
   font-weight: 600;
 }
 
-/* Optional: underline animation on hover */
 .nav a::after {
   content: "";
   position: absolute;
   width: 0%;
   height: 2px;
   left: 0;
-  bottom: -2px;
+  bottom: 0;
   background-color: var(--primary);
-  transition: width 0.3s ease;
+  transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border-radius: 2px;
 }
 
 .nav a:hover::after {
   width: 100%;
 }
 
-/* ---------- RESPONSIVE ---------- */
+/* ---------- HAMBURGER ICON (Hidden on Desktop) ---------- */
+/* You need to add a <div class="hamburger">...</div> in your HTML */
+.hamburger {
+  display: none; /* Hidden by default */
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30px;
+  height: 20px;
+  cursor: pointer;
+  z-index: 1002; /* Above the sidebar */
+}
+
+.hamburger span {
+  width: 100%;
+  height: 2px;
+  background-color: var(--text);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+/* Optional: Hamburger Animation when active */
+.hamburger.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 6px);
+}
+.hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+.hamburger.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -6px);
+}
+
+/* ---------- RESPONSIVE / SIDEBAR LOGIC ---------- */
+
 @media (max-width: 768px) {
+  
+  /* 1. Show Hamburger */
+  .hamburger {
+    display: flex;
+  }
+
+  /* 2. Adjust Header Height */
   .header {
-    padding: 12px 20px;
+    height: 70px;
+    padding: 0 20px;
   }
 
-  .nav {
-    gap: 15px;
+  /* 3. Keep Logo Visible but adjust size slightly */
+  .logo {
+    height: 36px;
   }
-
   .brand-name {
     font-size: 20px;
   }
-
+  /* We keep tagline visible if space permits, or hide if very tight */
   .brand-tagline {
-    font-size: 11px;
+    display: none; 
+  }
+
+  /* 4. Transform Nav into Sidebar */
+  .nav {
+    position: fixed;
+    top: 0;
+    right: -100%; /* Start off-screen to the right */
+    width: 250px;
+    height: 100vh;
+    background-color: #18181be6; /* Dark background with slight transparency */
+    backdrop-filter: blur(10px);
+    border-left: 1px solid var(--border);
+    
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 100px 30px 40px; /* Top padding clears the header area */
+    
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+    z-index: 1001;
+  }
+
+  /* Class to slide menu in (You must toggle this class with JS) */
+  .nav.active {
+    right: 0;
+  }
+
+  /* Sidebar Links Styling */
+  .nav a {
+    font-size: 18px;
+    width: 100%;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  
+  .nav a:last-child {
+    border-bottom: none;
+  }
+}
+
+/* Very Small Screens */
+@media (max-width: 400px) {
+  .brand-text {
+    /* Even on tiny screens, we try to keep the name visible */
+    display: flex; 
+  }
+  .brand-name {
+    font-size: 18px;
+  }
+  .hamburger {
+    width: 26px;
   }
 }
