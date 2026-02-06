@@ -14,6 +14,7 @@ const Receive = () => {
   const [roomId, setRoomId] = useState("");
   const [socket, setSocket] = useState(null);
   const [status, setStatus] = useState("Waiting for link...");
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     // Note: Ensure this URL matches your actual backend config
@@ -58,6 +59,11 @@ const Receive = () => {
       if (index === null) return;
       receivedBuffersRef.current[index] = event.data;
       receivedCountRef.current++;
+      if (fileMetaRef.current) {
+  const percent = Math.round((receivedCountRef.current / fileMetaRef.current.totalChunks) * 100);
+  setProgress(percent);
+}
+
       expectedChunkIndexRef.current = null;
 
       if (
@@ -180,6 +186,17 @@ const Receive = () => {
                 <>
                   <div className="status-loader"></div>
                   <p className="status-text">{status}</p>
+                  {roomId && status !== "Download Complete" && progress > 0 && (
+  <div className="progress-container">
+    <div className="progress-header">
+      <span>Downloading...</span>
+      <span>{progress}%</span>
+    </div>
+    <div className="progress-track">
+      <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+    </div>
+  </div>
+)}
                 </>
               )}
             </div>

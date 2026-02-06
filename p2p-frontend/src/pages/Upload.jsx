@@ -15,6 +15,8 @@ const Upload = () => {
   const [fileSize, setFileSize] = useState(null);
   const [socket, setSocket] = useState(null);
   const [roomId, setRoomId] = useState("");
+  const [progress, setProgress] = useState(0);
+  const [isTransferring, setIsTransferring] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -107,6 +109,9 @@ const Upload = () => {
 
       offset += chunkSize;
       index++;
+      const percent = Math.round((offset / file.size)*100);
+      setProgress(percent);
+      setIsTransferring(true);
     }
   }, []);
 
@@ -239,6 +244,19 @@ const Upload = () => {
                   </div>
                 </div>
               )}
+              {/* --- PROGRESS BAR START --- */}
+{isTransferring && progress < 100 && (
+  <div className="progress-container">
+    <div className="progress-header">
+      <span>Sending...</span>
+      <span>{progress}%</span>
+    </div>
+    <div className="progress-track">
+      <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+    </div>
+  </div>
+)}
+{/* --- PROGRESS BAR END --- */}
 
               <h3 className="share-title">Scan or Share Link</h3>
 
