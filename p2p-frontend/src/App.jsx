@@ -21,14 +21,14 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Home/>}/>     
           <Route path="/sharelink" element={<ShareLink/>}/>
-          <Route path="/receive" element={<Receive/>}/> 
+          <Route path="/receive" element={<Receive/>}/>
           <Route path="/upload" element={<Upload/>}/> 
           <Route path="/complete" element={<Complete/>}/> 
-          <Route path="/error" element={<Error/>}/>
           <Route path="/how-it-works" element={<HowItWorks/>}/>
           <Route path="/aboutus" element={<AboutUs/>}/>
           <Route path="/security" element={<Security/>}/>
           <Route path="/FAQ" element={<FAQ/>}/>
+          <Route path="*" element={<Error/>}/>
         </Route> t-works
           </Routes>
     </BR>
