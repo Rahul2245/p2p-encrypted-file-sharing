@@ -170,10 +170,21 @@ const Upload = () => {
       if (candidate) await pc.addIceCandidate(new RTCIceCandidate(candidate));
     };
 
+    const connectionError = (err)=>{
+      console.log(err.message);
+      if (err.message === "Too many connection attempts") {
+     alert("You are connecting too fast! Please wait a moment.");
+     socket.disconnect(); // Stop the client from spamming retries
+  }
+
+    }
+
     socket.on("link-created", handleLinkCreated);
     socket.on("initiator", handleInitiator);
     socket.on("answer", handleAnswer);
     socket.on("new-ice-candidate", handleNewIce);
+    socket.on("connect_error", connectionError);
+  
 
     return () => {
       pc.close();
