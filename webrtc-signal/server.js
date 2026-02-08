@@ -116,6 +116,10 @@ io.on('connection',(socket)=>{
         console.log('joined room',socket.id);
         const roomId = data.roomId;
         console.log(roomId);
+    //     if (clients.size >= 4) { 
+    //     socket.emit('room-full', 'This room has reached its limit of 4 peers.');
+    //     return; 
+    // }
         socket.join(roomId);
         const clients = io.sockets.adapter.rooms.get(roomId);
         console.log(clients.size);
@@ -123,6 +127,10 @@ io.on('connection',(socket)=>{
             socket.to(roomId).emit('initiator',{roomId});
             console.log('more than 2 clients',socket.id);
         }
+        if (clients.size >= 4) { 
+        socket.emit('room-full', 'This room has reached its limit of 4 peers.');
+        return; 
+    }
 
     });
 
