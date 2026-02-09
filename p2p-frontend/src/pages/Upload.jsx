@@ -116,7 +116,7 @@ const Upload = () => {
   }, []);
 
   useEffect(() => {
-    const s = io("https://10.126.4.173:9000");
+    const s = io("https://10.122.14.12:9000");
     setSocket(s);
     return () => s.disconnect();
   }, []);
