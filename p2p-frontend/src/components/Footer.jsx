@@ -35,15 +35,36 @@ const Footer = () => {
           </ul>
         </div>
 
-        {/* Connect */}
-        <div className="footer-col">
-          <h4>Connect</h4>
-          <ul>
-            <li>Email</li>
-            <li>GitHub</li>
-            <li>Instagram</li>
-          </ul>
-        </div>
+    {/* Connect */}
+<div className="footer-col">
+  <h4>Connect</h4>
+  <ul>
+    <li>
+      <a href="mailto:peervault4545@gmail.com">
+        Gmail
+      </a>
+    </li>
+    <li>
+      <a
+        href="https://github.com/Rahul2245/p2p-encrypted-file-sharing"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        GitHub
+      </a>
+    </li>
+    <li>
+      <a
+        href="https://instagram.com/peervault4545"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Instagram
+      </a>
+    </li>
+  </ul>
+</div>
+
       </div>
 
       <div className="footer-bottom">
