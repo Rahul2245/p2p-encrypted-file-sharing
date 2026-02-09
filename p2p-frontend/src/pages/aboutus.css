@@ -74,6 +74,7 @@
   font-weight: 800;
   margin-bottom: 1.5rem;
   letter-spacing: -0.03em;
+  line-height: 1.1;
 }
 
 /* Text Gradient Effect */
@@ -96,7 +97,8 @@
 /* Grid Layout */
 .about-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  /* Changed minmax to 280px to fit smaller phones better */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
   margin-bottom: 80px;
 }
@@ -160,7 +162,7 @@
 }
 
 /* ========================================= */
-/* NEW TEAM SECTION STYLES             */
+/* TEAM SECTION STYLES             */
 /* ========================================= */
 
 .team-section {
@@ -181,7 +183,7 @@
 .team-grid {
   display: flex;
   justify-content: center;
-  gap: 4rem; /* Horizontal spacing between developers */
+  gap: 3rem; /* Horizontal spacing between developers */
   flex-wrap: wrap;
 }
 
@@ -191,7 +193,9 @@
   padding: 40px 30px;
   border-radius: 20px;
   border: 1px solid var(--border); /* Subtle border */
-  width: 320px;
+  /* Made fluid for responsiveness */
+  width: 100%;
+  max-width: 340px; 
   transition: all 0.4s ease;
   display: flex;
   flex-direction: column;
@@ -296,35 +300,113 @@
   transform: translateX(4px);
 }
 
-/* Responsive Styles */
-@media (max-width: 768px) {
-  .about-header h1 {
-    font-size: 2.5rem;
-  }
-  
-  .about-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .about-card {
-    align-items: center;
-    text-align: center;
-  }
-
-  /* Team Section Mobile */
-  .team-grid {
-    flex-direction: column;
-    align-items: center;
-    gap: 3rem;
-  }
-  
-  .team-title {
-    font-size: 2rem;
-  }
-}
-
 /* Keyframes */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   RESPONSIVE DESIGN (ALL DEVICES)
+   ========================================= */
+
+/* Tablets (Portrait & Landscape) */
+@media (max-width: 1024px) {
+  .about-page {
+    padding: 60px 20px;
+  }
+  
+  .about-header h1 {
+    font-size: 3rem;
+  }
+  
+  .about-grid {
+    gap: 1.5rem;
+  }
+  
+  .team-grid {
+    gap: 2rem;
+  }
+}
+
+/* Mobile Devices (Large Phones & Small Tablets) */
+@media (max-width: 768px) {
+  .about-page {
+    padding: 40px 16px;
+  }
+
+  .about-header {
+    margin-bottom: 50px;
+  }
+
+  .about-header h1 {
+    font-size: 2.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .about-intro {
+    font-size: 1rem;
+  }
+
+  /* Grid becomes 1 column naturally via auto-fit, but we enforce alignment */
+  .about-card {
+    align-items: center;
+    text-align: center;
+    padding: 2rem 1.5rem;
+  }
+  
+  .card-icon-wrapper {
+    margin-bottom: 1rem;
+  }
+
+  /* Team Section Mobile */
+  .team-section {
+    margin-top: 80px;
+    margin-bottom: 40px;
+  }
+
+  .team-grid {
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+  }
+  
+  .team-card {
+    max-width: 100%; /* Let it fill the screen on mobile */
+    width: 100%;
+  }
+
+  .team-title {
+    font-size: 1.8rem;
+    margin-bottom: 40px;
+  }
+}
+
+/* Small Mobile Devices (iPhone SE, etc.) */
+@media (max-width: 480px) {
+  .about-header h1 {
+    font-size: 2rem;
+  }
+  
+  /* Adjust glow to not overwhelm small screen */
+  .bg-glow {
+    width: 300px;
+    height: 300px;
+    opacity: 0.12;
+  }
+
+  .about-card h3 {
+    font-size: 1.2rem;
+  }
+  
+  .cta-button {
+    width: 100%;
+    justify-content: center;
+    padding: 16px 20px;
+  }
+  
+  .team-img-wrapper {
+    width: 120px;
+    height: 120px;
+  }
 }

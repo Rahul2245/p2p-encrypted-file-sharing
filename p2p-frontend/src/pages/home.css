@@ -8,10 +8,19 @@
   --border: #3F3F46;
 }
 
+/* ---------- RESET ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Essential for responsive layouts */
+}
+
 /* ---------- PAGE ---------- */
 .home {
   background-color: var(--bg);
   color: var(--text);
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 /* ---------- HERO ---------- */
@@ -24,6 +33,7 @@
   font-size: 48px;
   font-weight: 700;
   margin-bottom: 18px;
+  line-height: 1.1;
 }
 
 .hero h1 span {
@@ -43,7 +53,7 @@
   display: flex;
   justify-content: center;
   gap: 20px;
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* Allows buttons to stack on small screens */
 }
 
 .btn {
@@ -53,6 +63,8 @@
   font-weight: 600;
   cursor: pointer;
   transition: 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .btn-primary {
@@ -76,27 +88,75 @@
 }
 
 /* ---------- FEATURES ---------- */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 24px;
-      padding: 60px 80px;
-    }
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  padding: 60px 80px;
+  max-width: 1400px; /* Good practice to keep grid centered on huge screens */
+  margin: 0 auto;
+}
 
-    .feature-card {
-      background-color: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 28px;
-    }
+.feature-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+}
 
-    .feature-card h3 {
-      margin-bottom: 10px;
-      font-size: 18px;
-    }
+.feature-card h3 {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
 
-    .feature-card p {
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.6;
-    }
+.feature-card p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* =========================================
+   RESPONSIVE DESIGN (MOBILE & TABLET)
+   ========================================= */
+
+/* Tablets (iPad, small laptops) */
+@media (max-width: 900px) {
+  .hero h1 {
+    font-size: 42px; /* Slightly smaller heading */
+  }
+  
+  .features {
+    padding: 60px 40px; /* Reduce side padding so grid isn't squashed */
+  }
+}
+
+/* Mobile Phones */
+@media (max-width: 600px) {
+  .hero {
+    padding: 60px 20px 40px;
+  }
+
+  .hero h1 {
+    font-size: 32px; /* Readable on phone */
+  }
+
+  .hero-text {
+    font-size: 16px;
+    margin-bottom: 30px;
+  }
+
+  .hero-actions {
+    flex-direction: column; /* Stack buttons vertically */
+    gap: 12px;
+  }
+
+  .btn {
+    width: 100%; /* Make buttons full width */
+    text-align: center;
+  }
+
+  .features {
+    padding: 40px 20px; /* Minimal padding for mobile */
+    grid-template-columns: 1fr; /* Force 1 column on small phones */
+  }
+}

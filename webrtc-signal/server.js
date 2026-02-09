@@ -6,6 +6,7 @@ import { Server } from 'socket.io'
 import { dirname,join } from "node:path";
 import { fileURLToPath } from "node:url";
 import crypto from "crypto";
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 
 
@@ -28,22 +29,66 @@ const secureExpressServer = https.createServer({
 //     // ]
 // },app)
 const io = new Server(secureExpressServer,{
+    maxHttpBufferSize: 1e4,
     cors: {
     origin: "*",   // allow frontend
     methods: ["GET", "POST"]
   }
 });
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-app.get('/',(req,res)=>{
-    res.sendFile(join(__dirname,'sample.html'));
+// const __dirname = dirname(fileURLToPath(import.meta.url));
+// app.get('/',(req,res)=>{
+//     res.sendFile(join(__dirname,'sample.html'));
+// });
+
+const handshakeLimiter = new RateLimiterMemory({
+   points: 50, 
+  duration: 60,
+
 });
 
+io.use(async (socket, next)=>{
+    const ip = socket.handshake.address;
+    try{
+        await handshakeLimiter.consume(ip);
+        next();
+
+    }catch(e){
+        next(new Error('Too many connection attempts'));
+
+    }
+})
+
+
+
 io.on('connection',(socket)=>{
-    console.log('a user entered the connection',socket.id);     
+    console.log('a user entered the connection',socket.id); 
+    
+    
+    const packetLimiter = new RateLimiterMemory({
+        points: 15,
+        duration: 1,
+
+    });
+
+    socket.use(async ([event, ...args], next)=>{
+        try{
+            await packetLimiter.consume(socket.id);
+            next();
+
+        }catch (e){
+            console.warn(`Rate limit exceeded for ${socket.id} on event: ${event}`);
+            socket.emit('error', 'Too many requests. Slow down.');
+
+        }
+    })
     socket.on('disconnect',()=>{
         console.log('user disconnnected',socket.id);
-    })
+    });
+
+    
+
+
 
     //forward offer
     socket.on('offer',(data)=>{
@@ -71,6 +116,10 @@ io.on('connection',(socket)=>{
         console.log('joined room',socket.id);
         const roomId = data.roomId;
         console.log(roomId);
+    //     if (clients.size >= 4) { 
+    //     socket.emit('room-full', 'This room has reached its limit of 4 peers.');
+    //     return; 
+    // }
         socket.join(roomId);
         const clients = io.sockets.adapter.rooms.get(roomId);
         console.log(clients.size);
@@ -78,6 +127,10 @@ io.on('connection',(socket)=>{
             socket.to(roomId).emit('initiator',{roomId});
             console.log('more than 2 clients',socket.id);
         }
+        if (clients.size >= 4) { 
+        socket.emit('room-full', 'This room has reached its limit of 4 peers.');
+        return; 
+    }
 
     });
 
@@ -100,7 +153,8 @@ io.on('connection',(socket)=>{
 
 
 
-secureExpressServer.listen(9000,()=>{
+secureExpressServer.listen(9000, "0.0.0.0", ()=>{
     console.log("server running on port 9000");
-})
+});
+
 
