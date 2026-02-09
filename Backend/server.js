@@ -31,7 +31,9 @@ const secureExpressServer = https.createServer({
 //     // ca:[
 //     //     readFileSync('./cert/ca.crt')
 //     // ]
-// },app)
+// },app);
+
+
 const io = new Server(secureExpressServer,{
     maxHttpBufferSize: 1e5,
     cors: {
@@ -46,19 +48,14 @@ const redisClient = new Redis({
     username: "default",
   password: process.env.REDIS_PASSWORD
 });
+
 redisClient.on('error', (err) => {
     console.error('Redis error:', err);
 });
 
-
 redisClient.on('connect', () => {
     console.log('Connected to Redis');
 });
-
-// const __dirname = dirname(fileURLToPath(import.meta.url));
-// app.get('/',(req,res)=>{
-//     res.sendFile(join(__dirname,'sample.html'));
-// });
 
 const handshakeLimiter = new RateLimiterRedis({
     storeClient: redisClient,
@@ -85,8 +82,6 @@ io.use(async (socket, next)=>{
 
     }
 });
-
-
 
 io.on('connection',(socket)=>{
     console.log('a user entered the connection',socket.id); 
