@@ -2,9 +2,12 @@ import "./receive.css";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
 import { createRTCConfig } from "../webrtcConfig"
+import { useParams } from "react-router-dom";
 
 
 const Receive = () => {
+
+  const { roomId: urlRoomId } = useParams();
   const peerRef = useRef(null);
   const dataChannelRef = useRef(null);
   const receivedBuffersRef = useRef([]);
@@ -17,6 +20,14 @@ const Receive = () => {
   const [socket, setSocket] = useState(null);
   const [status, setStatus] = useState("Waiting for link...");
   const [progress, setProgress] = useState(0);
+
+
+  useEffect(() => {
+    if (urlRoomId) {
+      setRoomId(urlRoomId);
+      setStatus("Establishing secure connection...");
+    }
+  }, [urlRoomId]);
 
   useEffect(() => {
     // Note: Ensure this URL matches your actual backend config
