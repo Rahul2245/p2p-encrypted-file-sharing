@@ -2,6 +2,7 @@ import "./upload.css";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { io } from "socket.io-client";
+import { createRTCConfig } from "../webrtcConfig"
 import { CopyIcon, CheckIcon, MailIcon } from "@primer/octicons-react"; // Added MailIcon if available, otherwise we use SVG
 
 const Upload = () => {
@@ -124,9 +125,19 @@ const Upload = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
+    // const pc = new RTCPeerConnection({
+    //   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    // });
+
+      const turnCredentials = {
+  username: "webrtc",
+  credential: "test123"
+};
+
+  
+    const pc = new RTCPeerConnection(
+  createRTCConfig(turnCredentials)
+);
     peerRef.current = pc;
 
     pc.onicecandidate = (event) => {

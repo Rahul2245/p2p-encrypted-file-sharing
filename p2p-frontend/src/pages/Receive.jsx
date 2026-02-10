@@ -1,6 +1,8 @@
 import "./receive.css";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
+import { createRTCConfig } from "../webrtcConfig"
+
 
 const Receive = () => {
   const peerRef = useRef(null);
@@ -75,12 +77,23 @@ const Receive = () => {
     }
   }, [assembleFile]);
 
+
+
+
   useEffect(() => {
     if (!socket || !roomId) return;
 
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
+      const turnCredentials = {
+  username: "webrtc",
+  credential: "test123"
+};
+
+    // const pc = new RTCPeerConnection({
+    //   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    // });
+    const pc = new RTCPeerConnection(
+  createRTCConfig(turnCredentials)
+);
     peerRef.current = pc;
 
     pc.onicecandidate = (event) => {
