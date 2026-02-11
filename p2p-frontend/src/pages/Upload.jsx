@@ -69,7 +69,7 @@ const Upload = () => {
     const dc = dataChannelRef.current;
     if (!file || !dc) return;
 
-    const chunkSize = 16 * 1024;
+    const chunkSize = 64 * 1024;
     const totalChunks = Math.ceil(file.size / chunkSize);
 
     dc.send(
@@ -85,13 +85,17 @@ const Upload = () => {
     let offset = 0;
     let index = 0;
 
+    const MAX_BUFFERED_AMOUNT = 16 * 1024 * 1024;
+
     while (offset < file.size) {
       if (dc.bufferedAmount > 1024 * 1024) {
         await new Promise((resolve) => {
           const handler = () => {
-            dc.removeEventListener("bufferedamountlow", handler);
-            resolve();
-          };
+           if (dc.bufferedAmount < 1 * 1024 * 1024) {
+             dc.removeEventListener("bufferedamountlow", handler);
+             resolve();
+          }
+        };
           dc.addEventListener("bufferedamountlow", handler);
         });
       }

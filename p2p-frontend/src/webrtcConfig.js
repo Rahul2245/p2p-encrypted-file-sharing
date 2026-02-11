@@ -9,6 +9,6 @@ export function createRTCConfig(turnCredentials) {
         username: turnCredentials.username,
         credential: turnCredentials.credential,
       },
-    ],
+    ]
   };
 }
