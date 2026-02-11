@@ -1,6 +1,7 @@
 import "./receive.css";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
+import {generateRSAKeyPair , exportRSAPublicKey , decryptAESKey , decryptChunk}from "../utils/crypto";
 
 const Receive = () => {
   const peerRef = useRef(null);
@@ -9,6 +10,8 @@ const Receive = () => {
   const fileMetaRef = useRef(null);
   const expectedChunkIndexRef = useRef(null);
   const receivedCountRef = useRef(0);
+  const rsaKeyPairRef = useRef(null);
+  const aesKeyRef = useRef(null);
 
   const [inputLink, setInputLink] = useState("");
   const [roomId, setRoomId] = useState("");
@@ -41,6 +44,14 @@ const Receive = () => {
     setStatus("Download Complete");
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      const keys=await generateRSAKeyPair();
+      rsaKeyPairRef.current=keys;
+      console.log("RSA keypair generated (receiver)");
+    })();
+  },[]);
+
   const handleIncomingData = useCallback((event) => {
     if (typeof event.data === "string") {
       const msg = JSON.parse(event.data);
@@ -57,7 +68,21 @@ const Receive = () => {
     } else {
       const index = expectedChunkIndexRef.current;
       if (index === null) return;
-      receivedBuffersRef.current[index] = event.data;
+
+      (async () => {
+        const buffer = new Uint8Array(event.data);
+
+// first 12 bytes = IV
+const iv = buffer.slice(0, 12);
+
+// rest = encrypted chunk
+const encryptedChunk = buffer.slice(12);
+
+const decrypted = await decryptChunk(iv, encryptedChunk);
+receivedBuffersRef.current[index] = decrypted;
+      })();
+
+      
       receivedCountRef.current++;
       if (fileMetaRef.current) {
   const percent = Math.round((receivedCountRef.current / fileMetaRef.current.totalChunks) * 100);
@@ -109,8 +134,29 @@ const Receive = () => {
     };
 
     socket.emit("join-room", { roomId });
+    (async () => {
+      if(!rsaKeyPairRef.current)return;
+      const publicKeyBuffer = await exportRSAPublicKey(rsaKeyPairRef.current.publicKey);
+      socket.emit("receiver-public-key",{
+        roomId,
+        publicKey:Array.from(new Uint8Array(publicKeyBuffer))
+      });
+      console.log("receiver public key sent");
+    })();
+
     socket.on("offer", handleOffer);
     socket.on("new-ice-candidate", handleNewIce);
+
+    socket.on("encrypted-aes-key",async ({encryptedKey}) => {
+      console.log("encrypted AES key received");
+
+      const aesKey = await decryptAESKey(
+        new Uint8Array(encryptedKey).buffer,
+        rsaKeyPairRef.current.privateKey
+      );
+      aesKeyRef.current=aesKey;
+      console.log("AES key decryted (receiver)");
+    });
 
     return () => {
       pc.close();
