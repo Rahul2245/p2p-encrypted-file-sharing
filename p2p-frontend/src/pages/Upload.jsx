@@ -60,7 +60,7 @@ const Upload = () => {
         return;
     }
 
-    window.open(url, "_blank");
+    window.open(url, "_blank"); 
   };
   // --------------------------
 
