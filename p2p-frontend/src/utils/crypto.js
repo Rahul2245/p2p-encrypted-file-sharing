@@ -23,7 +23,7 @@ export async function importRSAPublicKey(keyArray){
         new Uint8Array(keyArray).buffer,
         {
             name: "RSA-OAEP",
-            hash: "SHA_256"
+            hash: "SHA-256"
         },
         true,
         ["encrypt"]
@@ -62,7 +62,7 @@ export async function decryptAESKey(encryptedKey,rsaPrivateKey){
         rsaPrivateKey,
         encryptedKey
     );
-    return crypto.subtle.impoetKey(
+    return crypto.subtle.importKey(
         "raw",
         raw,
         {name:"AES-GCM"},
@@ -73,7 +73,7 @@ export async function decryptAESKey(encryptedKey,rsaPrivateKey){
 
 //------------CHUNKS-------------
 
-export async function encryptCHunk(aesKey,buffer){
+export async function encryptChunk(aesKey,buffer){
     const iv=crypto.getRandomValues(new Uint8Array(12));
     const encryptedChunk=await crypto.subtle.encrypt(
         {name: "AES-GCM",iv},
@@ -97,9 +97,9 @@ export async function decryptChunk(aesKey,iv,encryptedChunk){
 export async function generateSHA256FileHash(fileOrBlob){
     const buffer=await fileOrBlob.arrayBuffer();
     const hashBuffer=await crypto.subtle.digest("SHA-256",buffer);
-    return Array.from(new Array8Uint(hashBuffer)).map(b => b.toString(16).padStart(2,"0")).join("");
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,"0")).join("");
 }
 
 export function checkFileHash(incoming,calculated){
-    return incoming==calculated;
+    return incoming===calculated;
 }

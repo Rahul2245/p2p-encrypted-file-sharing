@@ -2,6 +2,7 @@ import "./upload.css";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { io } from "socket.io-client";
+import {generateAESKey,encryptAESKey,encryptChunk,importRSAPublicKey} from "../utils/crypto";
 import { CopyIcon, CheckIcon, MailIcon } from "@primer/octicons-react"; // Added MailIcon if available, otherwise we use SVG
 
 const Upload = () => {
@@ -9,6 +10,8 @@ const Upload = () => {
   const dataChannelRef = useRef(null);
   const selectedFileRef = useRef(null);
   const roomIdRef = useRef("");
+  const receiverPublicKeyRef=useRef(null);
+  const aesKeyRef=useRef(null);
 
   const [copied, setCopied] = useState(false);
   const [fileName, setFileName] = useState("");
@@ -64,6 +67,10 @@ const Upload = () => {
   // --------------------------
 
   const sendFile = useCallback(async () => {
+    if(!aesKeyRef.current){
+      console.log("AES key not ready");
+      return;
+    }
     const file = selectedFileRef.current;
     const dc = dataChannelRef.current;
     if (!file || !dc) return;
@@ -96,7 +103,12 @@ const Upload = () => {
       }
 
       const slice = file.slice(offset, offset + chunkSize);
-      const buffer = await slice.arrayBuffer();
+      const plainBuffer = await slice.arrayBuffer();
+      const {iv,encryptedChunk}=await encryptChunk(aesKeyRef.current,plainBuffer);
+      const encryptedBytes = new Uint8Array(encryptedChunk);
+      const combined=new Uint8Array(iv.length+encryptedBytes.length);
+      combined.set(iv,0);
+      combined.set(encryptedBytes,iv.length);
 
       dc.send(
         JSON.stringify({
@@ -105,7 +117,7 @@ const Upload = () => {
         })
       );
 
-      dc.send(buffer);
+      dc.send(combined);
 
       offset += chunkSize;
       index++;
@@ -116,7 +128,7 @@ const Upload = () => {
   }, []);
 
   useEffect(() => {
-    const s = io("https://10.122.14.12:9000");
+    const s = io("https://10.118.148.200:9000");
     setSocket(s);
     return () => s.disconnect();
   }, []);
@@ -145,20 +157,58 @@ const Upload = () => {
 
     const handleInitiator = async ({ roomId }) => {
       const dc = pc.createDataChannel("file");
+      dc.onopen = () => {
+        console.log("datachannel ready");
+      };
+
+      dc.onmessage = async (event) => {
+        if (typeof event.data !== "string") return;
+  const msg = JSON.parse(event.data);
+
+  if (msg.type === "receiver-public-key") {
+    console.log("Receiver public key received");
+
+    const publicKey = await importRSAPublicKey(
+      new Uint8Array(msg.publicKey).buffer
+    );
+
+    receiverPublicKeyRef.current = publicKey;
+
+    // 🔐 Generate AES key
+    const aesKey = await generateAESKey();
+    aesKeyRef.current = aesKey;
+
+    // 🔐 Encrypt AES key with receiver RSA
+    const encryptedAES = await encryptAESKey(
+      receiverPublicKeyRef.current,
+      aesKey
+    );
+
+    // 🔐 Send encrypted AES key
+    dc.send(
+      JSON.stringify({
+        type: "encrypted-aes-key",
+        encryptedKey: Array.from(new Uint8Array(encryptedAES)),
+      })
+    );
+
+    console.log("Encrypted AES key sent");
+
+    setTimeout(sendFile, 200);
+  }
+};
+
       dc.bufferedAmountLowThreshold = 512 * 1024;
       dataChannelRef.current = dc;
       dc.binaryType = "arraybuffer";
 
-      dc.onopen = () => {
-        setTimeout(sendFile, 300);
-      };
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
       socket.emit("offer", {
         offer,
-        roomId,
+        roomId:roomIdRef.current,
       });
     };
 

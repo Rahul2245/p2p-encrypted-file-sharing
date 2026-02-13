@@ -21,7 +21,7 @@ const Receive = () => {
 
   useEffect(() => {
     // Note: Ensure this URL matches your actual backend config
-    const s = io("https://10.122.14.12:9000");
+    const s = io("https://10.118.148.200:9000");
     setSocket(s);
     return () => s.disconnect();
   }, []);
@@ -52,51 +52,70 @@ const Receive = () => {
     })();
   },[]);
 
-  const handleIncomingData = useCallback((event) => {
+  const handleIncomingData = useCallback(async (event) => {
     if (typeof event.data === "string") {
       const msg = JSON.parse(event.data);
-      if (msg.type === "file-header") {
-        fileMetaRef.current = msg;
-        receivedBuffersRef.current = new Array(msg.totalChunks);
-        receivedCountRef.current = 0;
-        return;
+      if (msg.type === "encrypted-aes-key") {
+    console.log("Encrypted AES key received via DataChannel");
+
+    const decryptedAESKey = await decryptAESKey(
+      new Uint8Array(msg.encryptedKey).buffer,
+      rsaKeyPairRef.current.privateKey
+    );
+
+    aesKeyRef.current = decryptedAESKey;
+    console.log("AES key decrypted (receiver)");
+    return;
       }
+
+       if (msg.type === "file-header") {
+    fileMetaRef.current = msg;
+    receivedBuffersRef.current = new Array(msg.totalChunks);
+    receivedCountRef.current = 0;
+    return;
+  }
+
       if (msg.type === "file-chunk-meta") {
         expectedChunkIndexRef.current = msg.index;
         return;
       }
     } else {
-      const index = expectedChunkIndexRef.current;
-      if (index === null) return;
+        const index = expectedChunkIndexRef.current;
+  if (index === null) return;
 
-      (async () => {
-        const buffer = new Uint8Array(event.data);
+  if (!aesKeyRef.current) {
+    console.warn("AES key not ready yet");
+    return;
+  }
 
-// first 12 bytes = IV
-const iv = buffer.slice(0, 12);
+  const buffer = new Uint8Array(event.data);
 
-// rest = encrypted chunk
-const encryptedChunk = buffer.slice(12);
+  const iv = buffer.slice(0, 12);
+  const encryptedChunk = buffer.slice(12);
 
-const decrypted = await decryptChunk(iv, encryptedChunk);
-receivedBuffersRef.current[index] = decrypted;
-      })();
+  try {
+    const decrypted = await decryptChunk(aesKeyRef.current,iv, encryptedChunk);
 
-      
-      receivedCountRef.current++;
-      if (fileMetaRef.current) {
-  const percent = Math.round((receivedCountRef.current / fileMetaRef.current.totalChunks) * 100);
-  setProgress(percent);
-}
+    receivedBuffersRef.current[index] = decrypted;
+    receivedCountRef.current++;
+    if (fileMetaRef.current) {
+      const percent = Math.round(
+        (receivedCountRef.current / fileMetaRef.current.totalChunks) * 100
+      );
+      setProgress(percent);
+    }
 
-      expectedChunkIndexRef.current = null;
+    expectedChunkIndexRef.current = null;
 
-      if (
-        fileMetaRef.current &&
-        receivedCountRef.current === fileMetaRef.current.totalChunks
-      ) {
-        assembleFile();
-      }
+    if (
+      fileMetaRef.current &&
+      receivedCountRef.current === fileMetaRef.current.totalChunks
+    ) {
+      assembleFile();
+    }
+  } catch (err) {
+    console.error("Chunk decryption failed", err);
+  }
     }
   }, [assembleFile]);
 
@@ -115,12 +134,32 @@ receivedBuffersRef.current[index] = decrypted;
     };
 
     pc.ondatachannel = (event) => {
-      const dc = event.channel;
-      dataChannelRef.current = dc;
-      dc.binaryType = "arraybuffer";
-      setStatus("Receiving file stream...");
-      dc.onmessage = handleIncomingData;
-    };
+  const dc = event.channel;
+  dataChannelRef.current = dc;
+  dc.binaryType = "arraybuffer";
+
+  dc.onopen = async () => {
+    console.log("DataChannel opened (receiver)");
+
+    // ✅ Send RSA public key via DataChannel
+    const publicKeyBuffer = await exportRSAPublicKey(
+      rsaKeyPairRef.current.publicKey
+    );
+
+    dc.send(
+      JSON.stringify({
+        type: "receiver-public-key",
+        publicKey: Array.from(new Uint8Array(publicKeyBuffer)),
+      })
+    );
+
+    console.log("Receiver public key sent via DataChannel");
+  };
+
+  setStatus("Receiving file stream...");
+  dc.onmessage = handleIncomingData;
+};
+
 
     const handleOffer = async ({ offer }) => {
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -134,29 +173,9 @@ receivedBuffersRef.current[index] = decrypted;
     };
 
     socket.emit("join-room", { roomId });
-    (async () => {
-      if(!rsaKeyPairRef.current)return;
-      const publicKeyBuffer = await exportRSAPublicKey(rsaKeyPairRef.current.publicKey);
-      socket.emit("receiver-public-key",{
-        roomId,
-        publicKey:Array.from(new Uint8Array(publicKeyBuffer))
-      });
-      console.log("receiver public key sent");
-    })();
-
     socket.on("offer", handleOffer);
     socket.on("new-ice-candidate", handleNewIce);
 
-    socket.on("encrypted-aes-key",async ({encryptedKey}) => {
-      console.log("encrypted AES key received");
-
-      const aesKey = await decryptAESKey(
-        new Uint8Array(encryptedKey).buffer,
-        rsaKeyPairRef.current.privateKey
-      );
-      aesKeyRef.current=aesKey;
-      console.log("AES key decryted (receiver)");
-    });
 
     return () => {
       pc.close();
