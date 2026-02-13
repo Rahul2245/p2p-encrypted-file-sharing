@@ -2,6 +2,7 @@ import "./upload.css";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { io } from "socket.io-client";
+import { createRTCConfig } from "../webrtcConfig"
 import {generateAESKey,encryptAESKey,encryptChunk,importRSAPublicKey} from "../utils/crypto";
 import { CopyIcon, CheckIcon, MailIcon } from "@primer/octicons-react"; // Added MailIcon if available, otherwise we use SVG
 
@@ -62,7 +63,7 @@ const Upload = () => {
         return;
     }
 
-    window.open(url, "_blank");
+    window.open(url, "_blank"); 
   };
   // --------------------------
 
@@ -75,7 +76,7 @@ const Upload = () => {
     const dc = dataChannelRef.current;
     if (!file || !dc) return;
 
-    const chunkSize = 16 * 1024;
+    const chunkSize = 64 * 1024;
     const totalChunks = Math.ceil(file.size / chunkSize);
 
     dc.send(
@@ -91,13 +92,17 @@ const Upload = () => {
     let offset = 0;
     let index = 0;
 
+    const MAX_BUFFERED_AMOUNT = 16 * 1024 * 1024;
+
     while (offset < file.size) {
       if (dc.bufferedAmount > 1024 * 1024) {
         await new Promise((resolve) => {
           const handler = () => {
-            dc.removeEventListener("bufferedamountlow", handler);
-            resolve();
-          };
+           if (dc.bufferedAmount < 1 * 1024 * 1024) {
+             dc.removeEventListener("bufferedamountlow", handler);
+             resolve();
+          }
+        };
           dc.addEventListener("bufferedamountlow", handler);
         });
       }
@@ -136,9 +141,19 @@ const Upload = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
+    // const pc = new RTCPeerConnection({
+    //   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    // });
+
+      const turnCredentials = {
+  username: "webrtc",
+  credential: "test123"
+};
+
+  
+    const pc = new RTCPeerConnection(
+  createRTCConfig(turnCredentials)
+);
     peerRef.current = pc;
 
     pc.onicecandidate = (event) => {
