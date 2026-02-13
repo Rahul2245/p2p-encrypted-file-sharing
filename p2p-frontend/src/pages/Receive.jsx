@@ -4,6 +4,7 @@ import { io } from "socket.io-client";
 import { createRTCConfig } from "../webrtcConfig"
 import { useParams } from "react-router-dom";
 
+import {generateRSAKeyPair , exportRSAPublicKey , decryptAESKey , decryptChunk}from "../utils/crypto";
 
 const Receive = () => {
 
@@ -14,6 +15,8 @@ const Receive = () => {
   const fileMetaRef = useRef(null);
   const expectedChunkIndexRef = useRef(null);
   const receivedCountRef = useRef(0);
+  const rsaKeyPairRef = useRef(null);
+  const aesKeyRef = useRef(null);
 
   const [inputLink, setInputLink] = useState("");
   const [roomId, setRoomId] = useState("");
@@ -31,7 +34,7 @@ const Receive = () => {
 
   useEffect(() => {
     // Note: Ensure this URL matches your actual backend config
-    const s = io("https://10.122.14.12:9000");
+    const s = io("https://10.118.148.200:9000");
     setSocket(s);
     return () => s.disconnect();
   }, []);
@@ -54,37 +57,78 @@ const Receive = () => {
     setStatus("Download Complete");
   }, []);
 
-  const handleIncomingData = useCallback((event) => {
+  useEffect(() => {
+    (async () => {
+      const keys=await generateRSAKeyPair();
+      rsaKeyPairRef.current=keys;
+      console.log("RSA keypair generated (receiver)");
+    })();
+  },[]);
+
+  const handleIncomingData = useCallback(async (event) => {
     if (typeof event.data === "string") {
       const msg = JSON.parse(event.data);
-      if (msg.type === "file-header") {
-        fileMetaRef.current = msg;
-        receivedBuffersRef.current = new Array(msg.totalChunks);
-        receivedCountRef.current = 0;
-        return;
+      if (msg.type === "encrypted-aes-key") {
+    console.log("Encrypted AES key received via DataChannel");
+
+    const decryptedAESKey = await decryptAESKey(
+      new Uint8Array(msg.encryptedKey).buffer,
+      rsaKeyPairRef.current.privateKey
+    );
+
+    aesKeyRef.current = decryptedAESKey;
+    console.log("AES key decrypted (receiver)");
+    return;
       }
+
+       if (msg.type === "file-header") {
+    fileMetaRef.current = msg;
+    receivedBuffersRef.current = new Array(msg.totalChunks);
+    receivedCountRef.current = 0;
+    return;
+  }
+
       if (msg.type === "file-chunk-meta") {
         expectedChunkIndexRef.current = msg.index;
         return;
       }
     } else {
-      const index = expectedChunkIndexRef.current;
-      if (index === null) return;
-      receivedBuffersRef.current[index] = event.data;
-      receivedCountRef.current++;
-      if (fileMetaRef.current) {
-  const percent = Math.round((receivedCountRef.current / fileMetaRef.current.totalChunks) * 100);
-  setProgress(percent);
-}
+        const index = expectedChunkIndexRef.current;
+  if (index === null) return;
 
-      expectedChunkIndexRef.current = null;
+  if (!aesKeyRef.current) {
+    console.warn("AES key not ready yet");
+    return;
+  }
 
-      if (
-        fileMetaRef.current &&
-        receivedCountRef.current === fileMetaRef.current.totalChunks
-      ) {
-        assembleFile();
-      }
+  const buffer = new Uint8Array(event.data);
+
+  const iv = buffer.slice(0, 12);
+  const encryptedChunk = buffer.slice(12);
+
+  try {
+    const decrypted = await decryptChunk(aesKeyRef.current,iv, encryptedChunk);
+
+    receivedBuffersRef.current[index] = decrypted;
+    receivedCountRef.current++;
+    if (fileMetaRef.current) {
+      const percent = Math.round(
+        (receivedCountRef.current / fileMetaRef.current.totalChunks) * 100
+      );
+      setProgress(percent);
+    }
+
+    expectedChunkIndexRef.current = null;
+
+    if (
+      fileMetaRef.current &&
+      receivedCountRef.current === fileMetaRef.current.totalChunks
+    ) {
+      assembleFile();
+    }
+  } catch (err) {
+    console.error("Chunk decryption failed", err);
+  }
     }
   }, [assembleFile]);
 
@@ -114,12 +158,32 @@ const Receive = () => {
     };
 
     pc.ondatachannel = (event) => {
-      const dc = event.channel;
-      dataChannelRef.current = dc;
-      dc.binaryType = "arraybuffer";
-      setStatus("Receiving file stream...");
-      dc.onmessage = handleIncomingData;
-    };
+  const dc = event.channel;
+  dataChannelRef.current = dc;
+  dc.binaryType = "arraybuffer";
+
+  dc.onopen = async () => {
+    console.log("DataChannel opened (receiver)");
+
+    // ✅ Send RSA public key via DataChannel
+    const publicKeyBuffer = await exportRSAPublicKey(
+      rsaKeyPairRef.current.publicKey
+    );
+
+    dc.send(
+      JSON.stringify({
+        type: "receiver-public-key",
+        publicKey: Array.from(new Uint8Array(publicKeyBuffer)),
+      })
+    );
+
+    console.log("Receiver public key sent via DataChannel");
+  };
+
+  setStatus("Receiving file stream...");
+  dc.onmessage = handleIncomingData;
+};
+
 
     const handleOffer = async ({ offer }) => {
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -135,6 +199,7 @@ const Receive = () => {
     socket.emit("join-room", { roomId });
     socket.on("offer", handleOffer);
     socket.on("new-ice-candidate", handleNewIce);
+
 
     return () => {
       pc.close();
