@@ -6,6 +6,10 @@ import { createRTCConfig } from "../webrtcConfig"
 import {generateAESKey,encryptAESKey,encryptChunk,importRSAPublicKey} from "../utils/crypto";
 import { CopyIcon, CheckIcon, MailIcon } from "@primer/octicons-react"; // Added MailIcon if available, otherwise we use SVG
 
+
+const API_URL = process.env.REACT_APP_API_URL;
+
+
 const Upload = () => {
   const peerRef = useRef(null);
   const dataChannelRef = useRef(null);
@@ -133,7 +137,7 @@ const Upload = () => {
   }, []);
 
   useEffect(() => {
-    const s = io(import.meta.env.VITE_BACKEND_URL);
+   const s = io(API_URL);
 
     setSocket(s);
     return () => s.disconnect();

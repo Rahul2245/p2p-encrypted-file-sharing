@@ -6,6 +6,9 @@ import { useParams } from "react-router-dom";
 
 import {generateRSAKeyPair , exportRSAPublicKey , decryptAESKey , decryptChunk}from "../utils/crypto";
 
+const API_URL = process.env.REACT_APP_API_URL;
+
+
 const Receive = () => {
 
   const { roomId: urlRoomId } = useParams();
@@ -34,7 +37,7 @@ const Receive = () => {
 
   useEffect(() => {
     // Note: Ensure this URL matches your actual backend config
-  const s = io(import.meta.env.VITE_BACKEND_URL);
+  const s = io(API_URL);
 
     setSocket(s);
     return () => s.disconnect();
