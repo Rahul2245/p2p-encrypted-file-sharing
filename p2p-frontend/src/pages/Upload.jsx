@@ -96,7 +96,8 @@ const Upload = () => {
     let offset = 0;
     let index = 0;
 
-    const MAX_BUFFERED_AMOUNT = 16 * 1024 * 1024;
+    // const MAX_BUFFERED_AMOUNT = 16 * 1024 * 1024;
+    // console.log(MAX_BUFFERED_AMOUNT);
 
     while (offset < file.size) {
       if (dc.bufferedAmount > 1024 * 1024) {
@@ -217,7 +218,7 @@ const Upload = () => {
     setTimeout(sendFile, 200);
   }
 };
-console.log(MAX_BUFFERED_AMOUNT);
+
 
 
       dc.bufferedAmountLowThreshold = 512 * 1024;
