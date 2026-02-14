@@ -6,6 +6,10 @@ import { createRTCConfig } from "../webrtcConfig"
 import {generateAESKey,encryptAESKey,encryptChunk,importRSAPublicKey} from "../utils/crypto";
 import { CopyIcon, CheckIcon, MailIcon } from "@primer/octicons-react"; // Added MailIcon if available, otherwise we use SVG
 
+
+const API_URL = process.env.REACT_APP_API_URL;
+
+
 const Upload = () => {
   const peerRef = useRef(null);
   const dataChannelRef = useRef(null);
@@ -133,7 +137,8 @@ const Upload = () => {
   }, []);
 
   useEffect(() => {
-    const s = io("https://10.118.148.200:9000");
+   const s = io(API_URL);
+
     setSocket(s);
     return () => s.disconnect();
   }, []);
@@ -189,11 +194,11 @@ const Upload = () => {
 
     receiverPublicKeyRef.current = publicKey;
 
-    // 🔐 Generate AES key
+   
     const aesKey = await generateAESKey();
     aesKeyRef.current = aesKey;
 
-    // 🔐 Encrypt AES key with receiver RSA
+ 
     const encryptedAES = await encryptAESKey(
       receiverPublicKeyRef.current,
       aesKey
@@ -212,6 +217,8 @@ const Upload = () => {
     setTimeout(sendFile, 200);
   }
 };
+console.log(MAX_BUFFERED_AMOUNT);
+
 
       dc.bufferedAmountLowThreshold = 512 * 1024;
       dataChannelRef.current = dc;

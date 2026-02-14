@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs'
-import https from 'https'
+import http from 'http'
 
 import express from 'express'
 import { Server } from 'socket.io'
@@ -17,13 +17,10 @@ dotenv.config();
 const app = express()
 
 //reading key and cert from certfiles
-const key = readFileSync('./cert/cert.key')
-const cert = readFileSync('./cert/cert.crt')    
+// const key = readFileSync('./cert/cert.key')
+// const cert = readFileSync('./cert/cert.crt')    
 
-const secureExpressServer = https.createServer({
-  key,
-  cert
-},app)
+const secureExpressServer = http.createServer(app);
 
 
 // const secureExpressServer = createServer({key,cert
@@ -42,64 +39,64 @@ const io = new Server(secureExpressServer,{
   }
 });
 
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-  username: "default",
-  password: process.env.REDIS_PASSWORD
-});
+// const redisClient = new Redis({
+//   host: process.env.REDIS_HOST,
+//   port: process.env.REDIS_PORT,
+//   username: "default",
+//   password: process.env.REDIS_PASSWORD
+// });
 
 
-redisClient.on('error', (err) => {
-    console.error('Redis error:', err);
-});
+// redisClient.on('error', (err) => {
+//     console.error('Redis error:', err);
+// });
 
-redisClient.on('connect', () => {
-    console.log('Connected to Redis');
-});
+// redisClient.on('connect', () => {
+//     console.log('Connected to Redis');
+// });
 
-const handshakeLimiter = new RateLimiterRedis({
-    storeClient: redisClient,
-   points: 50, 
-  duration: 60,
+// const handshakeLimiter = new RateLimiterRedis({
+//     storeClient: redisClient,
+//    points: 50, 
+//   duration: 60,
 
-});
+// });
 
-const eventLimiter = new RateLimiterRedis({
-    storeClient: redisClient,
-    points: 15,
-    duration: 1,
-});
+// const eventLimiter = new RateLimiterRedis({
+//     storeClient: redisClient,
+//     points: 15,
+//     duration: 1,
+// });
 
-io.use(async (socket, next)=>{
-    const ip = socket.handshake.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-    socket.handshake.address;
-    try{
-        await handshakeLimiter.consume(ip);
-        next();
+// io.use(async (socket, next)=>{
+//     const ip = socket.handshake.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+//     socket.handshake.address;
+//     try{
+//         await handshakeLimiter.consume(ip);
+//         next();
 
-    }catch(e){
-        next(new Error('Too many connection attempts'));
+//     }catch(e){
+//         next(new Error('Too many connection attempts'));
 
-    }
-});
+//     }
+// });
 
 io.on('connection',(socket)=>{
     console.log('a user entered the connection',socket.id); 
     
     
 
-    socket.use(async ([event, ...args], next)=>{
-        try{
-            await eventLimiter.consume(socket.id);
-            next();
+    // socket.use(async ([event, ...args], next)=>{
+    //     try{
+    //         await eventLimiter.consume(socket.id);
+    //         next();
 
-        }catch (e){
-            console.warn(`Rate limit exceeded for ${socket.id} on event: ${event}`);
-            socket.emit('error', 'Too many requests. Slow down.');
+    //     }catch (e){
+    //         console.warn(`Rate limit exceeded for ${socket.id} on event: ${event}`);
+    //         socket.emit('error', 'Too many requests. Slow down.');
 
-        }
-    })
+    //     }
+    // })
     socket.on('disconnect',()=>{
         console.log('user disconnnected',socket.id);
     });
@@ -168,11 +165,14 @@ io.on('connection',(socket)=>{
 
 
 
+const PORT = process.env.PORT || 9000
 
 
 
-secureExpressServer.listen(9000, "0.0.0.0", ()=>{
-    console.log("server running on port 9000");
+
+
+secureExpressServer.listen(PORT, "0.0.0.0", () => {
+    console.log("Server running on port", PORT);
 });
 
 
