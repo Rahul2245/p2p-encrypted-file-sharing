@@ -169,8 +169,10 @@ const PORT = process.env.PORT || 9000
 
 
 
-secureExpressServer.listen(process.env.PORT, "0.0.0.0", ()=>{
-    console.log("server running on port 9000");
+
+
+secureExpressServer.listen(PORT, "0.0.0.0", () => {
+    console.log("Server running on port", PORT);
 });
 
 
