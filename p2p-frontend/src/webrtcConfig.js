@@ -2,7 +2,8 @@ export function createRTCConfig(turnCredentials) {
   return {
     iceServers: [
       {
-        urls: "stun:stun.l.google.com:19302",
+        // urls: "stun:stun.l.google.com:19302",
+        urls: "stun:stunserver2025.stunprotocol.org:3478",
       },
       {
         urls: "turn:172.17.168.48:3478",
