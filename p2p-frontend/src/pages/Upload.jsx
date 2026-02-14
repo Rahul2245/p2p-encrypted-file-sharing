@@ -133,7 +133,8 @@ const Upload = () => {
   }, []);
 
   useEffect(() => {
-    const s = io("https://10.126.2.242:9000");
+    const s = io(import.meta.env.VITE_BACKEND_URL);
+
     setSocket(s);
     return () => s.disconnect();
   }, []);
