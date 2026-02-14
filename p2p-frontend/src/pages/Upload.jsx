@@ -217,6 +217,8 @@ const Upload = () => {
     setTimeout(sendFile, 200);
   }
 };
+console.log(MAX_BUFFERED_AMOUNT);
+
 
       dc.bufferedAmountLowThreshold = 512 * 1024;
       dataChannelRef.current = dc;
