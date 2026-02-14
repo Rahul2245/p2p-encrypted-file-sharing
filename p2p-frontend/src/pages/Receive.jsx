@@ -34,7 +34,7 @@ const Receive = () => {
 
   useEffect(() => {
     // Note: Ensure this URL matches your actual backend config
-    const s = io("https://10.118.148.200:9000");
+    const s = io("https://10.126.2.242:9000");
     setSocket(s);
     return () => s.disconnect();
   }, []);

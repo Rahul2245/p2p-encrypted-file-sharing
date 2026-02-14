@@ -133,7 +133,7 @@ const Upload = () => {
   }, []);
 
   useEffect(() => {
-    const s = io("https://10.118.148.200:9000");
+    const s = io("https://10.126.2.242:9000");
     setSocket(s);
     return () => s.disconnect();
   }, []);
@@ -189,11 +189,11 @@ const Upload = () => {
 
     receiverPublicKeyRef.current = publicKey;
 
-    // 🔐 Generate AES key
+   
     const aesKey = await generateAESKey();
     aesKeyRef.current = aesKey;
 
-    // 🔐 Encrypt AES key with receiver RSA
+ 
     const encryptedAES = await encryptAESKey(
       receiverPublicKeyRef.current,
       aesKey
