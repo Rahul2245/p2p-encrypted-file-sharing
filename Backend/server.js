@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs'
-import https from 'https'
+import http from 'http'
 
 import express from 'express'
 import { Server } from 'socket.io'
@@ -17,13 +17,10 @@ dotenv.config();
 const app = express()
 
 //reading key and cert from certfiles
-const key = readFileSync('./cert/cert.key')
-const cert = readFileSync('./cert/cert.crt')    
+// const key = readFileSync('./cert/cert.key')
+// const cert = readFileSync('./cert/cert.crt')    
 
-const secureExpressServer = https.createServer({
-  key,
-  cert
-},app)
+const secureExpressServer = http.createServer(app);
 
 
 // const secureExpressServer = createServer({key,cert
@@ -168,10 +165,11 @@ io.on('connection',(socket)=>{
 
 
 
+const PORT = process.env.PORT || 9000
 
 
 
-secureExpressServer.listen(9000, "0.0.0.0", ()=>{
+secureExpressServer.listen(process.env.PORT, "0.0.0.0", ()=>{
     console.log("server running on port 9000");
 });
 
