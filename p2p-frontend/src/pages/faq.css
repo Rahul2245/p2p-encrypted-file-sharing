@@ -1,0 +1,243 @@
+/* =========================
+   ROOT VARIABLES
+========================= */
+:root {
+  --bg-dark: #0b0f14;
+  --bg-card: rgba(17, 23, 34, 0.7);
+  --bg-card-hover: #151c29;
+  --primary: #f7b500;
+  --text-main: #eaeaea;
+  --text-muted: rgba(234, 234, 234, 0.75);
+  --border: rgba(255, 255, 255, 0.05);
+}
+
+/* =========================
+   RESET & BASE
+========================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Crucial for responsive padding */
+}
+
+.faq-page {
+  background: linear-gradient(180deg, #0b0f14 0%, #06090d 100%);
+  min-height: 100vh;
+  color: var(--text-main);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+}
+
+/* =========================
+   HERO SECTION
+========================= */
+.faq-hero {
+  text-align: center;
+  padding: 80px 20px 60px;
+}
+
+.faq-hero h1 {
+  font-size: 42px;
+  margin-bottom: 16px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.faq-hero span {
+  color: var(--primary);
+  /* Optional: Text Glow for consistency with other pages */
+  text-shadow: 0 0 20px rgba(247, 181, 0, 0.2); 
+}
+
+.faq-hero p {
+  max-width: 600px;
+  margin: 0 auto;
+  opacity: 0.75;
+  font-size: 17px;
+  color: var(--text-muted);
+}
+
+/* =========================
+   CONTAINER
+========================= */
+.faq-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px 80px; /* Bottom padding for scroll space */
+}
+
+/* =========================
+   CATEGORY TITLE
+========================= */
+.faq-category {
+  margin: 50px 0 20px;
+  color: var(--primary);
+  font-size: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Optional line next to category */
+.faq-category::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+/* =========================
+   ACCORDION CARD
+========================= */
+.faq-item {
+  background: var(--bg-card);
+  border-radius: 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: hidden; /* Keeps border radius clean */
+}
+
+.faq-item:hover {
+  transform: translateY(-3px);
+  border-color: rgba(247, 181, 0, 0.3);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* =========================
+   QUESTION (TRIGGER)
+========================= */
+.faq-question {
+  padding: 24px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.faq-question:hover {
+  background: var(--bg-card-hover);
+}
+
+/* =========================
+   ANSWER (HIDDEN CONTENT)
+========================= */
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0, 1, 0, 1), padding 0.3s ease;
+  padding: 0 28px;
+  opacity: 0.9;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+/* Active State */
+.faq-item.active .faq-answer {
+  /* Increased max-height to safe value so text wraps on mobile without cutting off */
+  max-height: 1000px; 
+  padding: 0 28px 28px;
+  transition: max-height 0.4s ease-in-out;
+}
+
+/* =========================
+   ICON
+========================= */
+.faq-icon {
+  font-size: 20px;
+  color: var(--primary);
+  min-width: 24px; /* Prevents icon squashing */
+  text-align: right;
+  transition: transform 0.3s ease;
+}
+
+/* Rotate icon when active (Optional - needs JS logic to toggle class) */
+.faq-item.active .faq-icon {
+  transform: rotate(45deg); 
+}
+
+/* =========================================
+   RESPONSIVE DESIGN (ALL DEVICES)
+   ========================================= */
+
+/* Tablet & Small Laptops (1024px and down) */
+@media (max-width: 1024px) {
+  .faq-container {
+    padding: 0 30px 60px;
+  }
+}
+
+/* Tablets (768px and down) */
+@media (max-width: 768px) {
+  .faq-hero {
+    padding: 60px 20px 40px;
+  }
+
+  .faq-hero h1 {
+    font-size: 32px;
+  }
+
+  .faq-question {
+    padding: 20px;
+    font-size: 15px;
+  }
+  
+  .faq-answer {
+    padding: 0 20px;
+  }
+
+  .faq-item.active .faq-answer {
+    padding: 0 20px 24px;
+  }
+}
+
+/* Mobile Large (Landscape or big phones) */
+@media (max-width: 600px) {
+  .faq-hero h1 {
+    font-size: 28px;
+  }
+  
+  .faq-hero p {
+    font-size: 15px;
+  }
+}
+
+/* Mobile Small (Portrait - iPhone SE, etc) */
+@media (max-width: 480px) {
+  .faq-hero {
+    padding: 50px 16px 30px;
+  }
+
+  .faq-container {
+    padding: 0 16px 50px;
+  }
+
+  .faq-hero h1 {
+    font-size: 26px; /* Prevent wrapping on very small words */
+    line-height: 1.2;
+  }
+
+  .faq-category {
+    font-size: 16px;
+    margin: 35px 0 15px;
+  }
+
+  .faq-question {
+    padding: 18px 20px;
+    font-size: 14px;
+    gap: 15px; /* Space between text and icon */
+  }
+
+  .faq-answer {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+}

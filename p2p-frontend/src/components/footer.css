@@ -1,0 +1,197 @@
+/* =========================
+   FOOTER ROOT
+========================= */
+
+.footer {
+  background-color: #18181B;
+  border-top: 1px solid #3F3F46;
+  padding: 60px 80px 30px;
+  color: #FAFAFA;
+}
+
+/* =========================
+   GRID LAYOUT
+========================= */
+
+.footer-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr; /* Gave brand slightly more space */
+  gap: 40px;
+  align-items: start;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* =========================
+   BRAND
+========================= */
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-right: 20px;
+}
+
+.footer-logo {
+  width: 48px;
+}
+
+.footer-brand h3 {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.peer {
+  color: #FAFAFA;
+}
+
+.vault {
+  color: #F59E0B;
+}
+
+/* Description text under brand */
+.footer-desc {
+  color: #A1A1AA;
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 260px;
+}
+
+/* =========================
+   COLUMN TITLES
+========================= */
+
+.footer-col h4 {
+  color: #F59E0B;
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 20px;
+}
+
+/* =========================
+   LIST RESET
+========================= */
+
+.footer-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-col li {
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+/* =========================
+   LINK STYLE (ALL LINKS)
+========================= */
+
+.footer-col li a {
+  color: #D4D4D8; /* Slightly softer white for better read */
+  text-decoration: none;
+  transition: all 0.2s ease;
+  display: inline-block;
+}
+
+/* Hover Effect */
+.footer-col li a:hover {
+  color: #F59E0B; /* Orange on hover */
+  transform: translateX(4px);
+}
+
+.footer-col li a:active {
+  color: #D97706;
+}
+
+/* =========================
+   FOOTER BOTTOM
+========================= */
+
+.footer-bottom {
+  margin-top: 60px;
+  padding-top: 24px;
+  border-top: 1px solid #27272A;
+  text-align: center;
+  font-size: 13px;
+  color: #71717A;
+}
+
+/* =========================
+   RESPONSIVE DESIGN
+   ========================= */
+
+/* Tablet (Landscape & Large Tablets) */
+@media (max-width: 1024px) {
+  .footer {
+    padding: 50px 40px 30px;
+  }
+  
+  .footer-container {
+    gap: 32px;
+  }
+}
+
+/* Tablet (Portrait) */
+@media (max-width: 768px) {
+  .footer {
+    padding: 40px 24px;
+  }
+
+  .footer-container {
+    /* Switch to 2x2 grid */
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 40px 20px;
+  }
+
+  /* Brand takes full width on tablet */
+  .footer-brand {
+    grid-column: span 2; 
+    align-items: center;
+    text-align: center;
+    padding-right: 0;
+    margin-bottom: 20px;
+  }
+
+  .footer-desc {
+    max-width: 400px;
+  }
+}
+
+/* Mobile Devices */
+@media (max-width: 480px) {
+  .footer {
+    padding: 40px 20px;
+  }
+
+  .footer-container {
+    /* Stack everything in 1 column */
+    grid-template-columns: 1fr;
+    gap: 32px;
+    text-align: center;
+  }
+
+  .footer-brand {
+    grid-column: span 1;
+    align-items: center; /* Center logo */
+  }
+  
+  .footer-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .footer-col h4 {
+    margin-bottom: 16px;
+  }
+
+  /* Increase touch targets for links */
+  .footer-col li {
+    margin-bottom: 16px; 
+  }
+}

@@ -24,4 +24,4 @@ A browser-based peer-to-peer file sharing application that allows users to secur
 
 ## 👥 Team
 - Mentor: Aditya Kumar Singh
-- Developers: <Your Name>, <Friend Name>
+- Developers: Raga Hasini Kalluri, Rahul Gajula

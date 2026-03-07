@@ -1,0 +1,256 @@
+:root {
+  --bg-dark: #050505;        /* Pitch Black */
+  --bg-spotlight: #0f0f0f;   /* Slightly lighter for gradient */
+  --brand-gold: #fbbf24;     /* Your Brand Gold */
+  --text-white: #ffffff;
+  --text-grey: #6b7280;
+}
+
+/* Global Reset to prevent scrollbars */
+* {
+  box-sizing: border-box;
+}
+
+body { 
+  margin: 0; 
+  padding: 0; 
+}
+
+.minimal-error-page {
+  /* Min-height allows it to grow if content is taller than screen (e.g. landscape mobile) */
+  min-height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-dark);
+  background-image: radial-gradient(circle at center, var(--bg-spotlight) 0%, var(--bg-dark) 60%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  overflow: hidden;
+  padding: 20px; /* Padding to prevent edge touching on small screens */
+}
+
+.content-wrapper {
+  text-align: center;
+  z-index: 10;
+  width: 100%;
+  max-width: 800px;
+}
+
+/* --- THE CREATIVE RADAR 404 --- */
+.radar-404 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  font-size: 10rem;
+  font-weight: 200;
+  color: var(--text-white);
+  line-height: 1;
+  margin-bottom: 30px;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap; /* Prevents 4 0 4 from wrapping */
+}
+
+/* The '0' container */
+.radar-zero {
+  width: 140px;
+  height: 140px;
+  border: 1px dashed rgba(251, 191, 36, 0.3);
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(0,0,0,0.5);
+  flex-shrink: 0; /* Prevents the circle from being squashed */
+}
+
+/* The scanning line inside the '0' */
+.radar-sweep {
+  width: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--brand-gold));
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: left center;
+  animation: radar-spin 3s infinite linear;
+}
+
+/* A small dot in the center */
+.radar-zero::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--brand-gold);
+  border-radius: 50%;
+  position: absolute;
+  z-index: 2;
+}
+
+/* --- TEXT --- */
+.minimal-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-white);
+  margin: 0 0 16px 0;
+  letter-spacing: -0.5px;
+  padding: 0 10px;
+}
+
+.minimal-desc {
+  color: var(--text-grey);
+  font-size: 1rem;
+  max-width: 450px;
+  margin: 0 auto 40px auto;
+  line-height: 1.6;
+  padding: 0 20px; /* Ensure text doesn't hit edges */
+}
+
+/* --- BUTTON --- */
+.gold-link-btn {
+  background: transparent;
+  border: none;
+  color: var(--brand-gold);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 12px 24px; /* Larger touch target */
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-decoration: none; /* Just in case it's an <a> tag */
+}
+
+.arrow {
+  transition: transform 0.3s ease;
+}
+
+.gold-link-btn:hover {
+  opacity: 0.8;
+  letter-spacing: 1.5px;
+}
+
+.gold-link-btn:hover .arrow {
+  transform: translateX(-5px);
+}
+
+/* --- WATERMARK --- */
+.watermark {
+  position: absolute;
+  bottom: 40px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-grey);
+  opacity: 0.2;
+  letter-spacing: 3px;
+  text-align: center;
+  width: 100%;
+}
+
+/* --- ANIMATION --- */
+@keyframes radar-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* =========================================
+   RESPONSIVE QUERIES
+   ========================================= */
+
+/* Tablet (Portrait) & Smaller Laptops */
+@media (max-width: 1024px) {
+  .radar-404 {
+    font-size: 8rem;
+    gap: 12px;
+  }
+  
+  .radar-zero {
+    width: 110px;
+    height: 110px;
+  }
+  
+  .minimal-title {
+    font-size: 1.75rem;
+  }
+}
+
+/* Mobile Devices (Landscape & Portrait) */
+@media (max-width: 768px) {
+  .radar-404 {
+    font-size: 6rem;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .radar-zero {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .minimal-title {
+    font-size: 1.5rem;
+  }
+  
+  .minimal-desc {
+    font-size: 0.95rem;
+    margin-bottom: 30px;
+  }
+}
+
+/* Small Mobile (iPhone SE, Foldable Cover screens) */
+@media (max-width: 480px) {
+  .radar-404 {
+    font-size: 4rem; /* Smaller font to fit screen */
+    gap: 8px;
+  }
+  
+  .radar-zero {
+    width: 60px; /* Scale radar circle down */
+    height: 60px;
+  }
+  
+  .radar-zero::after {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .minimal-title {
+    font-size: 1.25rem;
+  }
+
+  .watermark {
+    font-size: 0.6rem;
+    bottom: 20px;
+  }
+}
+
+/* Landscape Mode on Mobile (Short Screens) */
+@media (max-height: 500px) and (orientation: landscape) {
+  .minimal-error-page {
+    justify-content: flex-start;
+    padding-top: 40px;
+    height: auto; /* Allow scrolling if needed */
+  }
+  
+  .radar-404 {
+    font-size: 4rem;
+    margin-bottom: 10px;
+  }
+  
+  .radar-zero {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .watermark {
+    position: relative;
+    bottom: auto;
+    margin-top: 30px;
+  }
+}

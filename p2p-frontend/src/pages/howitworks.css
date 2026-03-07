@@ -1,0 +1,415 @@
+:root {
+  /* Core Colors - Cyber Gold & Dark Zinc */
+  --bg-dark: #09090b;       /* Zinc 950 */
+  --bg-card: rgba(24, 24, 27, 0.6); /* Zinc 900 with opacity */
+  
+  --primary: #fbbf24;       /* Amber 400 */
+  --primary-dark: #d97706;  /* Amber 600 */
+  --primary-glow: rgba(251, 191, 36, 0.15);
+  
+  --text-main: #ffffff;
+  --text-muted: #a1a1aa;    /* Zinc 400 */
+  
+  --border: #27272a;
+  --border-active: #fbbf24;
+}
+
+/* --- PAGE LAYOUT --- */
+.hiw-page {
+  min-height: 100vh;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  padding: 100px 20px;
+  font-family: 'Inter', system-ui, sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.hiw-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* Background Ambient Glows */
+.bg-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: 0;
+  opacity: 0.12;
+  pointer-events: none;
+}
+.bg-glow-top { background: var(--primary); top: -200px; left: -200px; }
+.bg-glow-bottom { background: #4f46e5; bottom: -200px; right: -200px; }
+
+/* --- HEADER SECTION --- */
+.hiw-header {
+  text-align: center;
+  margin-bottom: 120px;
+}
+
+.hiw-header h1 {
+  font-size: 3.5rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+/* Gradient Text Effect */
+.text-gradient {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hiw-intro {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* --- TIMELINE SECTION --- */
+.story-timeline {
+  position: relative;
+  padding: 20px 0;
+}
+
+/* Central Timeline Line (Desktop) */
+.story-timeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: linear-gradient(to bottom, transparent, var(--border), var(--primary), var(--border), transparent);
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+.story-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 140px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Alternating Layout: Left vs Right */
+.story-card.left { flex-direction: row; }
+.story-card.right { flex-direction: row-reverse; }
+
+/* --- ICON / ILLUSTRATION BOX --- */
+.story-illustration-box {
+  width: 45%;
+  height: 280px;
+  /* Dark radial gradient for depth */
+  background: radial-gradient(circle at center, rgba(39, 39, 42, 0.5), #09090b); 
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 40px -10px rgba(0,0,0,0.5);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.story-illustration-box:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 50px -5px rgba(251, 191, 36, 0.15);
+  transform: translateY(-5px);
+}
+
+/* SVG Icon Styling */
+.story-illustration-box svg {
+  width: 120px;
+  height: 120px;
+  filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.2));
+  z-index: 2;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.story-illustration-box:hover svg {
+  filter: drop-shadow(0 0 25px rgba(251, 191, 36, 0.5));
+  transform: scale(1.1);
+}
+
+/* Rotating Ring Animation behind icon */
+.icon-glow-ring {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 1px dashed rgba(251, 191, 36, 0.15);
+  animation: spin 20s linear infinite;
+  z-index: 1;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* --- CONTENT BOX --- */
+.story-content {
+  width: 45%;
+  padding: 35px;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  position: relative;
+  transition: border-color 0.3s ease;
+}
+
+.story-card:hover .story-content {
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+/* Alignment logic */
+.story-card.left .story-content { text-align: left; }
+.story-card.right .story-content { text-align: right; }
+
+.step-number {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.story-content h2 {
+  font-size: 1.8rem;
+  margin-bottom: 15px;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.story-text {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+  margin-bottom: 25px;
+}
+
+/* Tech Specs Box inside content */
+.tech-translation {
+  font-size: 0.9rem;
+  color: #d4d4d8; /* Zinc 300 */
+  background: rgba(0, 0, 0, 0.3);
+  padding: 16px;
+  border-radius: 12px;
+  border-left: 3px solid var(--primary);
+}
+
+/* Reverse the border for the right side cards */
+.story-card.right .tech-translation {
+  border-left: none;
+  border-right: 3px solid var(--primary);
+}
+
+.tech-translation strong {
+  color: var(--primary);
+  display: block;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+
+/* --- SUMMARY SECTION --- */
+.hiw-summary {
+  margin-top: 60px;
+  text-align: center;
+  padding: 80px 40px;
+  background: linear-gradient(180deg, rgba(24,24,27,0) 0%, rgba(24,24,27,0.8) 100%);
+  border-radius: 30px;
+  border: 1px solid var(--border);
+}
+
+.hiw-summary h2 {
+  font-size: 2.5rem;
+  margin-bottom: 60px;
+  color: var(--text-main);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 40px;
+  margin-bottom: 80px;
+}
+
+.summary-item h3 {
+  font-size: 1.4rem;
+  margin-bottom: 15px;
+  color: var(--primary);
+}
+
+.summary-item p {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Large CTA Button */
+.cta-button-large {
+  background: var(--primary);
+  color: #09090b;
+  padding: 22px 55px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 30px var(--primary-glow);
+}
+
+.cta-button-large:hover {
+  transform: scale(1.05);
+  background-color: #fcd34d; /* Amber 300 */
+  box-shadow: 0 0 50px var(--primary-glow);
+}
+
+/* =========================================
+   RESPONSIVE DESIGN (FIXED)
+   ========================================= */
+
+/* Tablets & Small Laptops (Max 900px) */
+@media (max-width: 900px) {
+  
+  .hiw-page {
+    padding: 60px 20px;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+  }
+  
+  .hiw-header h1 { 
+    font-size: 2.8rem; 
+  }
+  
+  /* 1. MOVE TIMELINE TO LEFT */
+  .story-timeline::before { 
+    left: 20px; /* Line sits 20px from left edge */
+    transform: none; 
+  } 
+
+  /* 2. FORCE CARDS TO STACK VERTICALLY 
+     Using .story-card.left and .story-card.right to override desktop specificity 
+  */
+  .story-card, 
+  .story-card.left, 
+  .story-card.right {
+    flex-direction: column; /* Stack Image on top of Text */
+    align-items: flex-start;
+    margin-left: 50px; /* Push content right to make room for line */
+    margin-bottom: 70px;
+    width: auto; /* Allow auto width calculation */
+    padding-right: 0;
+  }
+
+  /* 3. FULL WIDTH BOXES */
+  .story-illustration-box, 
+  .story-content {
+    width: 100%;
+    max-width: 100%;
+    text-align: left;
+  }
+  
+  /* Reset text align for right-side cards */
+  .story-card.right .story-content { 
+    text-align: left; 
+  }
+  
+  .story-illustration-box {
+    height: 240px; 
+    margin-bottom: 25px;
+  }
+  
+  /* 4. TECH SPECS BORDER FIX */
+  .tech-translation, 
+  .story-card.right .tech-translation {
+    border-left: 3px solid var(--primary);
+    border-right: none;
+  }
+
+  /* 5. TIMELINE DOTS ALIGNMENT */
+  .story-card::before {
+    content: '';
+    position: absolute;
+    /* Math: 
+       Line is at 20px. 
+       Card starts at 50px.
+       Difference is 30px.
+       Dot is 16px wide (border-box). 
+       We need dot center to hit line center.
+       left: -38px puts it perfectly on the line.
+    */
+    left: -38px; 
+    top: 0;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 4px solid var(--bg-dark);
+    box-shadow: 0 0 10px var(--primary-glow);
+    z-index: 5;
+  }
+}
+
+/* Mobile Phones (Max 480px) */
+@media (max-width: 480px) {
+  .hiw-page {
+    padding: 50px 16px; 
+  }
+
+  .hiw-header h1 {
+    font-size: 2.2rem; 
+  }
+
+  /* Adjust Line Position */
+  .story-timeline::before {
+    left: 16px; /* Slightly closer to edge */
+  }
+
+  /* Adjust Card Margin */
+  .story-card, 
+  .story-card.left, 
+  .story-card.right {
+    margin-left: 36px; /* Pull content closer to line */
+    margin-bottom: 60px;
+  }
+
+  /* Adjust Dot Position */
+  .story-card::before {
+    left: -28px; /* Re-aligned for new margin */
+  }
+
+  .story-illustration-box {
+    height: 200px;
+  }
+
+  .story-content {
+    padding: 24px 20px; /* Smaller padding inside card */
+  }
+
+  .story-content h2 {
+    font-size: 1.5rem;
+  }
+  
+  .cta-button-large {
+    width: 100%;
+    padding: 18px;
+  }
+}
