@@ -160,3 +160,8 @@
     grid-template-columns: 1fr; /* Force 1 column on small phones */
   }
 }
+.icon {
+  margin-right: 8px;
+  vertical-align: middle;
+  font-size: 20px;
+}
