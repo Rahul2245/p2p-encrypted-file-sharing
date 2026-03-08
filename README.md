@@ -67,10 +67,6 @@ Users simply upload a file, generate a temporary sharing link or QR code, and th
 
 - Session/room management for secure communication between peers.
 
-- Real-time event handling for peer connection, signaling, and file transfer coordination.
-
-- Centralized error handling middleware to manage server errors and invalid requests.
-
 - Backend does not store files, ensuring privacy and temporary session-based communication.
 
 ### 🔒Security
@@ -85,7 +81,6 @@ Users simply upload a file, generate a temporary sharing link or QR code, and th
 
 - Files are transferred directly between devices, avoiding permanent storage on the server.
 
-- Rate limiting with Redis protects the server from spam and denial-of-service attempts.
 
 ## 🛠 Technologies / Libraries / Packages Used
 ### Frontend
@@ -155,6 +150,7 @@ http://localhost:3000
 Rahul Gajula
 
 Raga Hasini Kalluri
+
 
 
 
