@@ -45,33 +45,47 @@ Users simply upload a file, generate a temporary sharing link or QR code, and th
 
 ### 🖥 Frontend
 
-- File upload interface
+- Upload and share files directly between devices using peer-to-peer communication.
 
-- QR code generation for sharing links
+- Generate a unique shareable link for each file transfer session.
 
-- Temporary shareable link creation
+- QR code generation to allow quick connection from another device by scanning.
 
-- Real-time connection status
+- Real-time communication with the backend using Socket.IO.
 
-- Clean responsive UI
+- Clean and responsive React-based user interface.
 
-- Copy-to-clipboard link sharing
-
-- Secure peer connection initiation
+- Displays connection and transfer status during file sharing.
 
 ### ⚙ Backend
 
-- WebRTC signaling server using Socket.IO
+- WebRTC signaling server implemented with Node.js and Socket.IO to establish peer-to-peer connections.
 
-- Room-based peer connection management
+- Socket.IO middleware used for validating and managing socket connections.
 
-- Temporary session creation
+- Redis-based rate limiter implemented to prevent abuse and control excessive requests.
 
-- ICE candidate exchange
+- Session/room management for secure communication between peers.
 
-- Offer/Answer forwarding between peers
+- Real-time event handling for peer connection, signaling, and file transfer coordination.
 
-- Secure communication handling
+- Centralized error handling middleware to manage server errors and invalid requests.
+
+- Backend does not store files, ensuring privacy and temporary session-based communication.
+
+  ### 🔒Security
+
+- End-to-end encrypted file transfer using WebRTC data channels.
+
+- Symmetric encryption used to encrypt the file data before transmission.
+
+- Asymmetric encryption (RSA) used for secure key exchange between peers.
+
+- Combination of symmetric + asymmetric encryption ensures secure and efficient data transfer.
+
+- Files are transferred directly between devices, avoiding permanent storage on the server.
+
+- Rate limiting with Redis protects the server from spam and denial-of-service attempts.
 
 ## 🛠 Technologies / Libraries / Packages Used
 ### Frontend
@@ -115,6 +129,7 @@ cd p2p-encrypted-file-sharing
 
 ### 2. Install backend dependencies
 cd Backend
+
 npm install
 
 ### 3. Start the backend server
@@ -127,6 +142,7 @@ http://localhost:9000
 Open a new terminal and run:
 
 cd p2p-frontend
+
 npm install
 
 ### 5. Start the frontend
@@ -137,7 +153,9 @@ http://localhost:3000
 
 ## 👨‍💻 Team Members
 Rahul Gajula
+
 Raga Hasini Kalluri
+
 
 
 
