@@ -147,9 +147,12 @@ The frontend will run on:
 http://localhost:3000
 
 ## 👨‍💻 Team Members
-Rahul Gajula
+Raga Hasini Kalluri
 
 Raga Hasini Kalluri
+
+
+
 
 
 
