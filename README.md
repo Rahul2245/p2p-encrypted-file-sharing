@@ -104,8 +104,40 @@ Users simply upload a file, generate a temporary sharing link or QR code, and th
 
 - Local HTTPS certificates
 
+## 🖥Local Setup
+
+Follow these steps to run the project locally on your machine.
+
+### 1. Clone the repository
+git clone https://github.com/Rahul2245/p2p-encrypted-file-sharing.git
+
+cd p2p-encrypted-file-sharing
+
+### 2. Install backend dependencies
+cd Backend
+npm install
+
+### 3. Start the backend server
+node server.js
+
+The backend will run on:
+http://localhost:9000
+
+### 4. Install frontend dependencies
+Open a new terminal and run:
+
+cd p2p-frontend
+npm install
+
+### 5. Start the frontend
+npm start
+
+The frontend will run on:
+http://localhost:3000
+
 ## 👨‍💻 Team Members
 Rahul Gajula
 Raga Hasini Kalluri
+
 
 
