@@ -149,7 +149,8 @@ http://localhost:3000
 ## 👨‍💻 Team Members
 Raga Hasini Kalluri
 
-Raga Hasini Kalluri
+Rahul Gajula
+
 
 
 
