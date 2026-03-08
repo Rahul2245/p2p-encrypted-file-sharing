@@ -73,7 +73,7 @@ Users simply upload a file, generate a temporary sharing link or QR code, and th
 
 - Backend does not store files, ensuring privacy and temporary session-based communication.
 
-  ### 🔒Security
+### 🔒Security
 
 - End-to-end encrypted file transfer using WebRTC data channels.
 
@@ -155,6 +155,7 @@ http://localhost:3000
 Rahul Gajula
 
 Raga Hasini Kalluri
+
 
 
 
