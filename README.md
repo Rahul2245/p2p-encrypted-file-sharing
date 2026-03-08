@@ -43,31 +43,69 @@ Users simply upload a file, generate a temporary sharing link or QR code, and th
 
 ## ✨ Features Implemented
 
-🖥 Frontend
+### 🖥 Frontend
 
--File upload interface
--QR code generation for sharing links
--Temporary shareable link creation
--Real-time connection status
--Clean responsive UI
--Copy-to-clipboard link sharing
--Secure peer connection initiation
+- File upload interface
 
-## 🧠 How It Works
-1. Sender creates a sharing session
-2. Backend generates a one-time link / QR
-3. Receiver joins using the link
-4. WebRTC establishes a P2P connection
-5. Files are encrypted and sent directly between devices
+- QR code generation for sharing links
 
-## 🛠 Tech Stack
-- Frontend: React
-- Backend: Node.js, Express
-- Real-time Signaling: Socket.IO
-- P2P Communication: WebRTC
-- Encryption: Web Crypto API
+- Temporary shareable link creation
 
-## 👥 Team
-- Mentor: Aditya Kumar Singh
-- Developers: Raga Hasini Kalluri, Rahul Gajula
+- Real-time connection status
+
+- Clean responsive UI
+
+- Copy-to-clipboard link sharing
+
+- Secure peer connection initiation
+
+### ⚙ Backend
+
+- WebRTC signaling server using Socket.IO
+
+- Room-based peer connection management
+
+- Temporary session creation
+
+- ICE candidate exchange
+
+- Offer/Answer forwarding between peers
+
+- Secure communication handling
+
+## 🛠 Technologies / Libraries / Packages Used
+### Frontend
+
+- React.js
+
+- Socket.IO Client
+
+- WebRTC APIs
+
+- QRCode React
+
+- CSS3
+
+### Backend
+
+- Node.js
+
+- Express.js
+
+- Socket.IO
+
+- Crypto (for room ID generation)
+
+### Other Tools
+
+- Git & GitHub
+
+- WebRTC
+
+- Local HTTPS certificates
+
+## 👨‍💻 Team Members
+Rahul Gajula
+Raga Hasini Kalluri
+
 
