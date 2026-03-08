@@ -42,7 +42,7 @@ const Home = () => {
           </h3>
           <p>
             Your files are encrypted before transfer and decrypted
-            only on the receiver’s device.
+            only on the receiver's device.
           </p>
         </div>
 
