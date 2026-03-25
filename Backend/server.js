@@ -39,47 +39,47 @@ const io = new Server(secureExpressServer,{
   }
 });
 
-// const redisClient = new Redis({
-//   host: process.env.REDIS_HOST,
-//   port: process.env.REDIS_PORT,
-//   username: "default",
-//   password: process.env.REDIS_PASSWORD
-// });
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+  username: "default",
+  password: process.env.REDIS_PASSWORD
+});
 
 
-// redisClient.on('error', (err) => {
-//     console.error('Redis error:', err);
-// });
+redisClient.on('error', (err) => {
+    console.error('Redis error:', err);
+});
 
-// redisClient.on('connect', () => {
-//     console.log('Connected to Redis');
-// });
+redisClient.on('connect', () => {
+    console.log('Connected to Redis');
+});
 
-// const handshakeLimiter = new RateLimiterRedis({
-//     storeClient: redisClient,
-//    points: 50, 
-//   duration: 60,
+const handshakeLimiter = new RateLimiterRedis({
+    storeClient: redisClient,
+   points: 50, 
+  duration: 60,
 
-// });
+});
 
-// const eventLimiter = new RateLimiterRedis({
-//     storeClient: redisClient,
-//     points: 15,
-//     duration: 1,
-// });
+const eventLimiter = new RateLimiterRedis({
+    storeClient: redisClient,
+    points: 15,
+    duration: 1,
+});
 
-// io.use(async (socket, next)=>{
-//     const ip = socket.handshake.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-//     socket.handshake.address;
-//     try{
-//         await handshakeLimiter.consume(ip);
-//         next();
+io.use(async (socket, next)=>{
+    const ip = socket.handshake.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+    socket.handshake.address;
+    try{
+        await handshakeLimiter.consume(ip);
+        next();
 
-//     }catch(e){
-//         next(new Error('Too many connection attempts'));
+    }catch(e){
+        next(new Error('Too many connection attempts'));
 
-//     }
-// });
+    }
+});
 
 io.on('connection',(socket)=>{
     console.log('a user entered the connection',socket.id); 
